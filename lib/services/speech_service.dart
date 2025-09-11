@@ -1,12 +1,10 @@
-// lib/services/speech_service.dart
 import 'dart:async';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
-/// Small wrapper around speech_to_text to centralize initialization and callbacks.
-/// - Use [partialStream] to listen to interim transcripts (live updates).
-/// - Use [statusStream] to monitor engine status (listening/done/notListening).
-/// - Use [errorStream] to receive error maps/strings from the plugin.
+/// Wrapper around speech_to_text for STT.
+/// - Emits partial transcripts
+/// - Emits status, error, and sound level events
 class SpeechService {
   final stt.SpeechToText _speech = stt.SpeechToText();
 
@@ -27,6 +25,8 @@ class SpeechService {
   bool get isAvailable => _available;
   bool _available = false;
 
+  bool get isListening => _speech.isListening;
+
   Future<void> initialize() async {
     try {
       _available = await _speech.initialize(
@@ -42,11 +42,11 @@ class SpeechService {
     }
   }
 
-  /// Start listening. If [requestPermission] is true we will ask for microphone permission.
+  /// Start listening with long session (dictation mode).
   Future<bool> startListening({
     bool requestPermission = true,
-    Duration listenFor = const Duration(seconds: 30),
-    Duration pauseFor = const Duration(seconds: 4),
+    Duration listenFor = const Duration(minutes: 5),
+    Duration pauseFor = const Duration(seconds: 10),
     String localeId = 'ko-KR',
   }) async {
     if (requestPermission) {
@@ -62,6 +62,7 @@ class SpeechService {
     try {
       await _speech.listen(
         onResult: (result) {
+          // recognizedWords is cumulative, not incremental
           _partialController.add(result.recognizedWords);
         },
         listenFor: listenFor,
@@ -95,6 +96,4 @@ class SpeechService {
     _errorController.close();
     _soundLevelController.close();
   }
-
-  bool get isListening => _speech.isListening;
 }
