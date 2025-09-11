@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'models/chat_model.dart';
 
+/// Robust Gemini streaming adapter: guards against adding events after the
+/// stream controller is closed and cleans up timers/subscriptions on cancel.
 class GeminiChatModel implements ChatModel {
   final String apiKey;
   final String model;
@@ -15,26 +17,63 @@ class GeminiChatModel implements ChatModel {
     double? temperature,
     Map<String, dynamic>? options,
   }) {
-    final controller = StreamController<ChatChunk>();
+    // Shared state visible to onCancel
+    Timer? initialTimer;
+    Timer? gapTimer;
+    StreamSubscription? sub;
+    http.StreamedResponse? response;
     bool cancelled = false;
     int tokenCounter = 0;
 
-    // retry/backoff config
-    int attempt429 = 0;
-    const int max429Retries = 3;
+    // Create controller with onCancel so we can clean up when listener cancels
+    late final StreamController<ChatChunk> controller;
+    controller = StreamController<ChatChunk>(
+      onCancel: () async {
+        cancelled = true;
+        try {
+          await sub?.cancel();
+        } catch (_) {}
+        try {
+          initialTimer?.cancel();
+        } catch (_) {}
+        try {
+          gapTimer?.cancel();
+        } catch (_) {}
+        try {
+          await response?.stream.drain();
+        } catch (_) {}
+      },
+    );
 
-    // gap/keep-alive config
-    int gapRetry = 0;
-    const int maxGapRetries = 2;
-    const Duration initialTimeout = Duration(seconds: 20);
-    const Duration gapTimeout = Duration(seconds: 5);
+    // Helper to add safely to the stream
+    void safeAdd(ChatChunk chunk) {
+      if (cancelled || controller.isClosed) return;
+      try {
+        controller.add(chunk);
+      } catch (e, st) {
+        // defensive: if add still throws, swallow and log
+        // ignore: avoid_print
+        print('GeminiChatModel.safeAdd error: $e\n$st');
+      }
+    }
 
+    // main request logic (extracted so we can restart on gap/retry)
     Future<void> startRequest() async {
-      if (cancelled) return;
-      Timer? initialTimer;
-      Timer? gapTimer;
-      StreamSubscription? sub;
+      if (cancelled || controller.isClosed) return;
+
+      // cancel previous timers/sub if any
+      try {
+        initialTimer?.cancel();
+      } catch (_) {}
+      try {
+        gapTimer?.cancel();
+      } catch (_) {}
+      try {
+        await sub?.cancel();
+      } catch (_) {}
+      response = null;
       String buffer = "";
+      bool firstTokenSeen = false;
 
       try {
         final url = Uri.parse(
@@ -64,94 +103,84 @@ class GeminiChatModel implements ChatModel {
           ..headers.addAll(headers)
           ..body = jsonEncode(body);
 
-        final response = await request.send();
+        response = await request.send();
 
-        if (cancelled) {
+        if (cancelled || controller.isClosed) {
           try {
-            await response.stream.drain();
+            await response?.stream.drain();
           } catch (_) {}
           return;
         }
 
-        if (response.statusCode == 429) {
-          if (attempt429 < max429Retries) {
-            final wait = Duration(seconds: 2 << attempt429);
-            attempt429++;
-            controller.add(
-              ChatChunk(
-                delta: "",
-                meta: {
-                  "event": "retry",
-                  "reason": "rate_limit",
-                  "attempt": attempt429,
-                  "waitSeconds": wait.inSeconds,
-                },
-              ),
-            );
-            await Future.delayed(wait);
-            return startRequest();
-          } else {
-            controller.add(
-              ChatChunk(
-                delta: "",
-                isFinal: true,
-                meta: {"error": "Rate limit (429). Retries exhausted."},
-              ),
-            );
-            await controller.close();
-            return;
-          }
-        }
+        // At this point response is non-null. Promote to a local non-nullable var.
+        final resp = response!;
 
-        if (response.statusCode != 200) {
-          controller.add(
+        // handle 429 as a chunk with retry metadata (or treat as error after retries)
+        if (resp.statusCode == 429) {
+          safeAdd(
             ChatChunk(
               delta: "",
-              isFinal: true,
-              meta: {"error": "Gemini API error: ${response.statusCode}"},
+              meta: {"event": "error", "error": "Rate limit (429)"},
             ),
           );
-          await controller.close();
+          try {
+            if (!controller.isClosed) await controller.close();
+          } catch (_) {}
           return;
         }
 
-        bool firstTokenSeen = false;
-        initialTimer = Timer(initialTimeout, () {
-          if (!firstTokenSeen && !controller.isClosed) {
-            controller.add(
+        if (resp.statusCode != 200) {
+          safeAdd(
+            ChatChunk(
+              delta: "",
+              isFinal: true,
+              meta: {"error": "Gemini API error: ${resp.statusCode}"},
+            ),
+          );
+          try {
+            if (!controller.isClosed) await controller.close();
+          } catch (_) {}
+          return;
+        }
+
+        // initial-response watchdog (20s)
+        initialTimer = Timer(const Duration(seconds: 20), () {
+          if (cancelled || controller.isClosed) return;
+          if (!firstTokenSeen) {
+            safeAdd(
               ChatChunk(
                 delta: "",
                 isFinal: true,
-                meta: {
-                  "error":
-                      "Timeout: no response in ${initialTimeout.inSeconds}s",
-                },
+                meta: {"error": "Timeout: no response in 20s"},
               ),
             );
-            sub?.cancel();
             try {
-              controller.close();
+              sub?.cancel();
+            } catch (_) {}
+            try {
+              if (!controller.isClosed) controller.close();
             } catch (_) {}
           }
         });
 
-        final decodedStream = response.stream.transform(const Utf8Decoder());
+        final decoded = resp.stream.transform(const Utf8Decoder());
 
-        sub = decodedStream.listen(
+        sub = decoded.listen(
           (chunk) {
-            if (cancelled) {
-              sub?.cancel();
+            if (cancelled || controller.isClosed) {
+              try {
+                sub?.cancel();
+              } catch (_) {}
               return;
             }
 
-            attempt429 = 0;
             buffer += chunk;
 
             while (true) {
               final startIdx = buffer.indexOf('{');
               if (startIdx == -1) {
-                if (buffer.length > 4096) {
-                  buffer = buffer.substring(buffer.length - 2048);
+                if (buffer.length > 8192) {
+                  buffer = buffer.substring(buffer.length - 4096);
                 }
                 break;
               }
@@ -183,44 +212,35 @@ class GeminiChatModel implements ChatModel {
 
                 if (!firstTokenSeen) {
                   firstTokenSeen = true;
-                  initialTimer?.cancel();
+                  try {
+                    initialTimer?.cancel();
+                  } catch (_) {}
                 }
 
-                gapTimer?.cancel();
-                gapTimer = Timer(gapTimeout, () async {
-                  gapRetry++;
-                  controller.add(
+                try {
+                  gapTimer?.cancel();
+                } catch (_) {}
+
+                // set gap timer (5s)
+                gapTimer = Timer(const Duration(seconds: 5), () async {
+                  if (cancelled || controller.isClosed) return;
+                  // emit a small meta chunk indicating a gap/retry intention
+                  safeAdd(
                     ChatChunk(
                       delta: "",
-                      meta: {
-                        "event": "gap_retry",
-                        "attempt": gapRetry,
-                        "timeoutSeconds": gapTimeout.inSeconds,
-                      },
+                      meta: {"event": "gap_retry", "timeoutSeconds": 5},
                     ),
                   );
-                  sub?.cancel();
-                  if (gapRetry <= maxGapRetries && !cancelled) {
-                    final wait = Duration(seconds: 1 + gapRetry);
-                    await Future.delayed(wait);
-                    if (!cancelled) await startRequest();
-                  } else {
-                    if (!controller.isClosed) {
-                      controller.add(
-                        ChatChunk(
-                          delta: "",
-                          isFinal: true,
-                          meta: {
-                            "error":
-                                "Stream stalled (no tokens for ${gapTimeout.inSeconds}s).",
-                          },
-                        ),
-                      );
-                      try {
-                        controller.close();
-                      } catch (_) {}
-                    }
-                  }
+
+                  try {
+                    await sub?.cancel();
+                  } catch (_) {}
+
+                  if (cancelled || controller.isClosed) return;
+                  // backoff then restart
+                  await Future.delayed(const Duration(seconds: 1));
+                  if (cancelled || controller.isClosed) return;
+                  await startRequest();
                 });
 
                 final candidates = jsonData["candidates"];
@@ -234,17 +254,12 @@ class GeminiChatModel implements ChatModel {
                       final text = part["text"];
                       if (text != null && text.toString().isNotEmpty) {
                         tokenCounter++;
-                        if (!controller.isClosed) {
-                          controller.add(
-                            ChatChunk(
-                              delta: text.toString(),
-                              meta: {
-                                "model": model,
-                                "tokenCount": tokenCounter,
-                              },
-                            ),
-                          );
-                        }
+                        safeAdd(
+                          ChatChunk(
+                            delta: text.toString(),
+                            meta: {"model": model, "tokenCount": tokenCounter},
+                          ),
+                        );
                       }
                     }
                   }
@@ -252,59 +267,74 @@ class GeminiChatModel implements ChatModel {
                   final finishReason = candidate["finishReason"];
                   if (finishReason != null &&
                       finishReason.toString().toUpperCase() == "STOP") {
-                    if (!controller.isClosed) {
-                      controller.add(
-                        ChatChunk(
-                          delta: "",
-                          isFinal: true,
-                          meta: {
-                            "event": "finish",
-                            "reason": finishReason,
-                            "tokenCount": tokenCounter,
-                          },
-                        ),
-                      );
-                      controller.close();
-                    }
+                    safeAdd(
+                      ChatChunk(
+                        delta: "",
+                        isFinal: true,
+                        meta: {
+                          "event": "finish",
+                          "reason": finishReason,
+                          "tokenCount": tokenCounter,
+                        },
+                      ),
+                    );
+                    try {
+                      if (!controller.isClosed) controller.close();
+                    } catch (_) {}
                   }
                 }
-              } catch (_) {
-                // skip parse errors, keep buffer
+              } catch (e, st) {
+                // parse error: keep buffer, continue. Log for debugging.
+                // ignore: avoid_print
+                print('Gemini parse error: $e\n$st\njsonStr=$jsonStr');
               }
-            }
-          },
+            } // while
+          }, // onData
           onDone: () {
-            gapTimer?.cancel();
-            initialTimer?.cancel();
+            try {
+              gapTimer?.cancel();
+            } catch (_) {}
+            try {
+              initialTimer?.cancel();
+            } catch (_) {}
             if (!controller.isClosed) {
-              controller.add(
+              safeAdd(
                 ChatChunk(
                   delta: "",
                   isFinal: true,
                   meta: {"event": "done", "tokenCount": tokenCounter},
                 ),
               );
-              controller.close();
+              try {
+                controller.close();
+              } catch (_) {}
             }
           },
           onError: (err) {
-            initialTimer?.cancel();
-            gapTimer?.cancel();
+            try {
+              initialTimer?.cancel();
+            } catch (_) {}
+            try {
+              gapTimer?.cancel();
+            } catch (_) {}
             if (!controller.isClosed) {
-              controller.add(
+              safeAdd(
                 ChatChunk(
                   delta: "",
                   isFinal: true,
                   meta: {"error": err.toString()},
                 ),
               );
+              try {
+                controller.close();
+              } catch (_) {}
             }
           },
           cancelOnError: true,
         );
-      } catch (e) {
+      } catch (e, st) {
         if (!controller.isClosed) {
-          controller.add(
+          safeAdd(
             ChatChunk(
               delta: "",
               isFinal: true,
@@ -312,22 +342,24 @@ class GeminiChatModel implements ChatModel {
             ),
           );
           try {
-            await Future.delayed(const Duration(milliseconds: 200));
-            controller.close();
+            // short delay before close to let UI process chunk if necessary
+            Future.delayed(
+              const Duration(milliseconds: 100),
+            ).then((_) => controller.close()).catchError((_) {});
           } catch (_) {}
         }
+        // debug print
+        // ignore: avoid_print
+        print('Gemini startRequest exception: $e\n$st');
       }
-    }
+    } // end startRequest
 
+    // start the first request but do not await it
     unawaited(startRequest());
-
-    controller.onCancel = () {
-      cancelled = true;
-    };
 
     return controller.stream;
   }
 }
 
-// small helper for dart < 3
+// small helper (no-op) to mimic unawaited pattern
 void unawaited(Future<void> f) {}

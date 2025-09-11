@@ -3,6 +3,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 
 class TtsService {
   final FlutterTts _tts = FlutterTts();
+  bool isSpeaking = false;
 
   Future<void> init({
     String lang = 'ko-KR',
@@ -20,10 +21,12 @@ class TtsService {
     if (text.trim().isEmpty) return;
     await _tts.stop();
     await _tts.speak(text);
+    isSpeaking = true;
   }
 
   Future<void> stop() async {
     await _tts.stop();
+    isSpeaking = false;
   }
 
   void dispose() {

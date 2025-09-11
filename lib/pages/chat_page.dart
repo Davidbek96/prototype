@@ -12,13 +12,48 @@ class ChatPage extends StatefulWidget {
   State<ChatPage> createState() => _ChatPageState();
 }
 
-class _ChatPageState extends State<ChatPage> {
+class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   final ScrollController _scrollController = ScrollController();
+
+  ChatController get _ctrl => Get.find<ChatController>();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
 
   @override
   void dispose() {
+    // Ensure TTS is stopped and clean up
+    try {
+      _ctrl.tts.stop();
+    } catch (_) {}
+    WidgetsBinding.instance.removeObserver(this);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  @override
+  void deactivate() {
+    // Called when the widget is removed from the widget tree or covered by another route.
+    // Stop any ongoing TTS so it doesn't keep playing when the user navigates away.
+    try {
+      _ctrl.tts.stop();
+    } catch (_) {}
+    super.deactivate();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // If the app loses focus/paused, stop TTS to avoid background playback
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      try {
+        _ctrl.tts.stop();
+      } catch (_) {}
+    }
   }
 
   void _scrollToBottom() {
@@ -86,11 +121,27 @@ class _ChatPageState extends State<ChatPage> {
                   final isActive =
                       ctrl.isStreaming.value &&
                       index == ctrl.activeModelIndex.value;
+
+                  // Determine the preceding user message index (for retry)
+                  int userIndex = -1;
+                  if (msg.role == 'model' &&
+                      index - 1 >= 0 &&
+                      msgs[index - 1].role == 'user') {
+                    userIndex = index - 1;
+                  }
+
                   return ChatBubble(
                     message: msg,
                     isActiveStream: isActive,
                     onReplay: () => ctrl.tts.speak(msg.content),
-                    onStopTts: () => ctrl.tts.stop(),
+                    onStopTts: () {
+                      try {
+                        ctrl.tts.stop();
+                      } catch (_) {}
+                    },
+                    onRetry: userIndex >= 0
+                        ? () => ctrl.retryMessage(userIndex)
+                        : null,
                   );
                 },
               );

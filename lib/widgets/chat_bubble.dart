@@ -1,4 +1,3 @@
-// lib/widgets/chat_bubble.dart
 import 'package:flutter/material.dart';
 import '../models/chat_model.dart';
 
@@ -7,6 +6,7 @@ class ChatBubble extends StatelessWidget {
   final bool isActiveStream;
   final VoidCallback? onReplay;
   final VoidCallback? onStopTts;
+  final VoidCallback? onRetry;
 
   const ChatBubble({
     super.key,
@@ -14,6 +14,7 @@ class ChatBubble extends StatelessWidget {
     this.isActiveStream = false,
     this.onReplay,
     this.onStopTts,
+    this.onRetry,
   });
 
   @override
@@ -28,29 +29,13 @@ class ChatBubble extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         constraints: const BoxConstraints(maxWidth: 700),
         decoration: BoxDecoration(
-          color: isUser ? Colors.blue : Color(0xFFF1F3F5),
+          color: isUser ? Colors.blue : const Color(0xFFF1F3F5),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // if (!isUser && isActiveStream)
-            //   Padding(
-            //     padding: const EdgeInsets.only(bottom: 6.0),
-            //     child: Row(
-            //       mainAxisSize: MainAxisSize.min,
-            //       children: const [
-            //         SizedBox(
-            //           width: 12,
-            //           height: 12,
-            //           child: CircularProgressIndicator(strokeWidth: 2),
-            //         ),
-            //         SizedBox(width: 8),
-            //         Text("Typing...", style: TextStyle(fontSize: 12)),
-            //       ],
-            //     ),
-            //   ),
             Text(
               (message.content.isEmpty || message.content == '...')
                   ? '...'
@@ -72,8 +57,13 @@ class ChatBubble extends StatelessWidget {
                   ),
                   IconButton(
                     tooltip: 'Stop Speaking',
-                    icon: const Icon(Icons.stop, size: 20),
+                    icon: const Icon(Icons.volume_off, size: 20),
                     onPressed: onStopTts,
+                  ),
+                  IconButton(
+                    tooltip: 'Retry',
+                    icon: const Icon(Icons.refresh, size: 20),
+                    onPressed: onRetry,
                   ),
                 ],
               ),
