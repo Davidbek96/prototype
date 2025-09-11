@@ -22,13 +22,13 @@ class ChatBubble extends StatelessWidget {
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+        margin: isUser
+            ? const EdgeInsets.only(top: 10, bottom: 10, left: 30, right: 10)
+            : const EdgeInsets.only(top: 10, bottom: 10, left: 10, right: 30),
         padding: const EdgeInsets.all(12),
         constraints: const BoxConstraints(maxWidth: 700),
         decoration: BoxDecoration(
-          color: isUser
-              ? Colors.blue
-              : const Color.fromARGB(255, 240, 240, 240),
+          color: isUser ? Colors.blue : Color(0xFFF1F3F5),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(

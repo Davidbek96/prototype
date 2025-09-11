@@ -54,7 +54,7 @@ class ChatPage extends StatelessWidget {
                 itemCount: msgs.length,
                 itemBuilder: (context, index) {
                   final msg = msgs[index];
-                  final isUser = msg.role == 'user';
+
                   final isActive =
                       ctrl.isStreaming.value &&
                       index == ctrl.activeModelIndex.value;
@@ -68,7 +68,7 @@ class ChatPage extends StatelessWidget {
               );
             }),
           ),
-          const Divider(height: 1),
+          //const Divider(height: 1),
           // Input area: pass controller's messageController and mic callbacks
           Obx(() {
             return InputArea(

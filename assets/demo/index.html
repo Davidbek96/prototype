@@ -215,9 +215,18 @@
     </div>
 
     <script>
+        // ---------------- CONFIG ----------------
+        const REQUEST_TIMEOUT_MS = 10000; // 10s timeout per spec
+        // ----------------------------------------
+
         let showTickLogs = false;
 
+        // Map of requestId -> { timer, action, startedAt }
+        const pendingRequests = {};
+
+        // Prefer crypto.randomUUID() if available
         function uuid() {
+            if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
                 const r = Math.random() * 16 | 0,
                     v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -225,71 +234,261 @@
             });
         }
 
+        // Logging utilities (reuse existing #log element)
         function log(msg) {
-            const pre = document.getElementById('log');
-            pre.textContent += "\n" + msg;
-            pre.scrollTop = pre.scrollHeight;
+            try {
+                const pre = document.getElementById('log');
+                pre.textContent += "\n" + `[${new Date().toLocaleTimeString()}] ${msg}`;
+                pre.scrollTop = pre.scrollHeight;
+            } catch (e) {
+                /* silent fallback */
+                console.log('log error', e);
+            }
         }
 
         function clearLog() {
-            document.getElementById('log').textContent = "";
-        }
-
-        function sendAction(action, payload = {}) {
-            const message = {
-                type: 'request',
-                action,
-                requestId: uuid(),
-                payload
-            };
             try {
-                if (window.JOI && typeof window.JOI.postMessage === 'function') {
-                    window.JOI.postMessage(JSON.stringify(message));
-                    log('[JS→Native] ' + JSON.stringify(message));
-                } else {
-                    alert('JOI.postMessage not available');
-                }
-            } catch (e) {
-                alert('Failed to send: ' + e);
-            }
+                document.getElementById('log').textContent = "";
+            } catch (e) { /* ignore */ }
         }
 
         function toggleTickLogs() {
             showTickLogs = !showTickLogs;
-            document.getElementById('tickLogBtn').innerText =
-                showTickLogs ? "Hide Tick Logs" : "Show Tick Logs";
+            try {
+                document.getElementById('tickLogBtn').innerText =
+                    showTickLogs ? "Hide Tick Logs" : "Show Tick Logs";
+            } catch (e) { /* ignore */ }
         }
 
-        // Native callback
-        window.JOI.onMessage = function (data) {
+        // Keep a minimal request visible trace in the log (no DOM changes)
+        function markRequestPending(requestId, action) {
+            log(`[JS→Native] request ${requestId} action=${action} (pending)`);
+        }
+
+        function markRequestSuccess(requestId, action) {
+            log(`[JS] request ${requestId} action=${action} succeeded`);
+        }
+
+        function markRequestError(requestId, action, code, message) {
+            log(`[JS] request ${requestId} action=${action} error=${code} message=${message}`);
+        }
+
+        // sendAction: builds message, registers timeout, sends to native via JOI.postMessage
+        function sendAction(action, payload = {}) {
+            const requestId = uuid();
+            const message = {
+                type: 'request',
+                action,
+                requestId,
+                payload
+            };
+
             try {
-                const obj = (typeof data === 'string') ? JSON.parse(data) : data;
-                if (obj && obj.type === 'event') {
-                    switch (obj.action) {
-                        case 'nativeTick':
-                            document.getElementById('tick').textContent = obj.payload?.tick ?? 0;
-                            if (showTickLogs) log('[Native→JS] ' + JSON.stringify(obj));
-                            break;
-                        case 'batteryState':
-                            document.getElementById('battery').textContent = obj.payload?.state ?? 'unknown';
-                            log('[Native→JS] ' + JSON.stringify(obj));
-                            break;
-                        case 'connectivity':
-                            document.getElementById('network').textContent = obj.payload?.status ?? 'unknown';
-                            log('[Native→JS] ' + JSON.stringify(obj));
-                            break;
-                        default:
-                            log('[Native→JS] ' + JSON.stringify(obj));
+                // mark pending
+                markRequestPending(requestId, action);
+
+                // start timeout
+                const timer = setTimeout(() => {
+                    // Timeout handler: E_TIMEOUT
+                    if (pendingRequests[requestId]) {
+                        markRequestError(requestId, action, 'E_TIMEOUT', 'No response within 10s');
+                        // clean up
+                        delete pendingRequests[requestId];
                     }
+                }, REQUEST_TIMEOUT_MS);
+
+                // store pending
+                pendingRequests[requestId] = {
+                    timer,
+                    action,
+                    startedAt: Date.now()
+                };
+
+                // Send message to native
+                if (window.JOI && typeof window.JOI.postMessage === 'function') {
+                    window.JOI.postMessage(JSON.stringify(message));
+                    // Also log the exact message string
+                    log('[JS→Native] ' + JSON.stringify(message));
                 } else {
-                    log('[Native→JS] ' + JSON.stringify(obj));
+                    // No bridge available
+                    clearTimeout(timer);
+                    delete pendingRequests[requestId];
+                    log('[JS] JOI.postMessage not available — cannot send request');
+                    alert('JOI.postMessage not available');
                 }
             } catch (e) {
-                log('[Native→JS] (invalid json) ' + data);
+                log('[JS] Failed to send request: ' + e);
             }
+        }
+
+        // Clean up pending entry when response/error arrives
+        function clearPending(requestId) {
+            const pending = pendingRequests[requestId];
+            if (!pending) return;
+            try {
+                if (pending.timer) clearTimeout(pending.timer);
+            } catch (e) { /* ignore */ }
+            delete pendingRequests[requestId];
+        }
+
+        // Handle response-type messages from native
+        function handleResponse(obj) {
+            const rid = obj.requestId;
+            const action = obj.action || '(unknown)';
+            if (!rid) {
+                log('[Native→JS] response missing requestId: ' + JSON.stringify(obj));
+                return;
+            }
+            const pending = pendingRequests[rid];
+            if (!pending) {
+                // Late response or unknown id
+                log(`[Native→JS] response for unknown/timed-out request ${rid}: ` + JSON.stringify(obj));
+                return;
+            }
+            // clear timeout and mark success
+            clearPending(rid);
+            markRequestSuccess(rid, action);
+
+            // Log payload and do small UI-safe updates (no new DOM elements)
+            try {
+                log(`[Native→JS response] action=${action} requestId=${rid} payload=${JSON.stringify(obj.payload)}`);
+            } catch (e) {
+                log(`[Native→JS response] action=${action} requestId=${rid} (payload not serializable)`);
+            }
+
+            // Special-case: pickImage — log a compact preview message
+            if (action && action.toLowerCase() === 'pickimage' && obj.payload) {
+                const p = obj.payload;
+                if (p.imageData && typeof p.imageData === 'string') {
+                    // data URI: log base64 length (avoid dumping huge data into UI)
+                    const size = p.imageData.length;
+                    log(`[pickImage] received data URI (length ${size}) — displayed by native app`);
+                } else if (p.uri && typeof p.uri === 'string') {
+                    log(`[pickImage] image URI: ${p.uri}`);
+                } else {
+                    log('[pickImage] payload missing imageData/uri: ' + JSON.stringify(p));
+                }
+            }
+        }
+
+        // Handle error-type messages from native
+        function handleError(obj) {
+            const rid = obj.requestId;
+            const action = obj.action || '(unknown)';
+            const err = obj.error || {};
+            const code = err.code || 'E_UNKNOWN';
+            const message = err.message || JSON.stringify(err);
+
+            if (rid && pendingRequests[rid]) {
+                clearPending(rid);
+                markRequestError(rid, action, code, message);
+            } else {
+                // Global/unassociated error
+                log('[Native→JS error] ' + JSON.stringify(obj));
+            }
+        }
+
+        // Handle event messages from native (timer, battery, connectivity)
+        function handleEvent(obj) {
+            const action = obj.action;
+            switch ((action || '').toLowerCase()) {
+                case 'nativetick':
+                    try {
+                        document.getElementById('tick').textContent = obj.payload?.tick ?? 0;
+                    } catch (e) { }
+                    if (showTickLogs) log('[Native→JS event] ' + JSON.stringify(obj));
+                    break;
+                case 'batterystate':
+                    try {
+                        document.getElementById('battery').textContent = obj.payload?.state ?? 'unknown';
+                    } catch (e) { }
+                    log('[Native→JS event] ' + JSON.stringify(obj));
+                    break;
+                case 'connectivity':
+                    try {
+                        document.getElementById('network').textContent = obj.payload?.status ?? 'unknown';
+                    } catch (e) { }
+                    log('[Native→JS event] ' + JSON.stringify(obj));
+                    break;
+                default:
+                    log('[Native→JS event] ' + JSON.stringify(obj));
+            }
+        }
+
+        // Set up window.JOI.onMessage safely (don't overwrite native if already set,
+        // but ensure we parse messages for logging / timeout clearing)
+        window.JOI = window.JOI || {};
+
+        // If no onMessage defined, provide one. If defined, wrap it (call native handler then ours)
+        if (typeof window.JOI.onMessage !== 'function') {
+            window.JOI.onMessage = function (data) {
+                try {
+                    const obj = (typeof data === 'string') ? JSON.parse(data) : data;
+                    if (!obj || typeof obj !== 'object') {
+                        log('[Native→JS] (invalid json) ' + data);
+                        return;
+                    }
+                    const t = obj.type;
+                    if (t === 'event') {
+                        handleEvent(obj);
+                    } else if (t === 'response') {
+                        handleResponse(obj);
+                    } else if (t === 'error') {
+                        handleError(obj);
+                    } else {
+                        // unknown type: log raw
+                        log('[Native→JS] ' + JSON.stringify(obj));
+                    }
+                } catch (e) {
+                    log('[Native→JS] (invalid json) ' + data);
+                }
+            };
+        } else {
+            // existing handler present — wrap it
+            const nativeHandler = window.JOI.onMessage;
+            window.JOI.onMessage = function (data) {
+                // call native handler first (so app logic still runs)
+                try {
+                    nativeHandler(data);
+                } catch (e) {
+                    // ignore errors in native handler
+                }
+
+                // now also process for our pending-request bookkeeping & logs
+                try {
+                    const obj = (typeof data === 'string') ? JSON.parse(data) : data;
+                    if (!obj || typeof obj !== 'object') {
+                        log('[Native→JS] (invalid json) ' + data);
+                        return;
+                    }
+                    const t = obj.type;
+                    if (t === 'event') {
+                        handleEvent(obj);
+                    } else if (t === 'response') {
+                        handleResponse(obj);
+                    } else if (t === 'error') {
+                        handleError(obj);
+                    } else {
+                        log('[Native→JS] ' + JSON.stringify(obj));
+                    }
+                } catch (e) {
+                    log('[Native→JS] (invalid json) ' + data);
+                }
+            };
+        }
+
+        // expose small helpers for manual debug in console (non-UI)
+        window.__JOI_DEBUG = {
+            sendAction,
+            pendingRequests
         };
 
+        // keep original public functions names working if other code depends on them
+        // (the HTML used sendAction(...) directly via onclick attributes)
+        // sendAction is already global
+
     </script>
+
 </body>
 
 </html>

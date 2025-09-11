@@ -1,4 +1,3 @@
-
 // lib/widgets/input_area.dart
 import 'package:flutter/material.dart';
 import 'package:avatar_glow/avatar_glow.dart';
@@ -45,7 +44,10 @@ class _InputAreaState extends State<InputArea> {
       }
     } else if (widget.speech != null) {
       try {
-        await widget.speech!.startListening(requestPermission: true, listenFor: Duration.zero);
+        await widget.speech!.startListening(
+          requestPermission: true,
+          listenFor: Duration.zero,
+        );
       } catch (e) {
         debugPrint("InputArea.startListening error: $e");
       }
@@ -72,51 +74,105 @@ class _InputAreaState extends State<InputArea> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6),
-      child: Row(
-        children: [
-          // 🎤 Microphone with glowing wave
-          AvatarGlow(
-            animate: widget.isListening || _holding,
-            glowColor: const Color.fromARGB(255, 46, 46, 46),
-            duration: const Duration(milliseconds: 1000),
-            curve: Curves.easeOut,
-            repeat: true,
-            child: GestureDetector(
-              onLongPressStart: (_) => _handleLongPressStart(),
-              onLongPressEnd: (_) => _handleLongPressEnd(),
-              child: CircleAvatar(
-                backgroundColor: (widget.isListening || _holding)
-                    ? Colors.red
-                    : const Color.fromARGB(255, 46, 46, 46),
-                radius: 25,
-                child: Icon(
-                  (widget.isListening || _holding) ? Icons.mic : Icons.mic_none,
+    bool hasText = widget.controller.text.trim().isNotEmpty;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+
+        borderRadius: BorderRadius.circular(15),
+        border: Border(
+          top: BorderSide(color: Colors.grey.withAlpha(50), width: 2),
+        ),
+      ),
+      //color: Theme.of(context).cardColor, // light grey background
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
                   color: Colors.white,
+                  border: Border.all(
+                    color: Colors.black.withValues(alpha: 0.1),
+                  ),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    // Text field
+                    Expanded(
+                      child: TextField(
+                        controller: widget.controller,
+                        minLines: 1,
+                        maxLines: 5,
+                        onChanged: (_) => setState(() {}),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.black87,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: "Message",
+                          hintStyle: TextStyle(color: Colors.grey.shade500),
+                          border: InputBorder.none,
+                          isDense: true,
+                        ),
+                      ),
+                    ),
+
+                    // 📤 Send button (only when text exists)
+                    if (hasText)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4.0),
+                        child: GestureDetector(
+                          onTap: widget.onSend,
+                          child: const Icon(
+                            Icons.send,
+                            color: Colors.blue, // iOS blue
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
-          ),
 
-          const SizedBox(width: 8),
+            const SizedBox(width: 8),
 
-          // ⌨️ Growable text input (shows live transcript while speaking)
-          Expanded(
-            child: TextField(
-              controller: widget.controller,
-              minLines: 1,
-              maxLines: 5,
-              decoration: const InputDecoration(
-                hintText: "Type or speak your message...",
-                border: OutlineInputBorder(),
-                isDense: true,
-                contentPadding: EdgeInsets.all(10),
+            // 🎤 Microphone with glowing wave (always visible)
+            AvatarGlow(
+              animate: widget.isListening || _holding,
+              glowColor: Colors.blue.withValues(alpha: 0.6),
+              duration: const Duration(milliseconds: 1200),
+              curve: Curves.easeOut,
+              repeat: true,
+              child: GestureDetector(
+                onLongPressStart: (_) => _handleLongPressStart(),
+                onLongPressEnd: (_) => _handleLongPressEnd(),
+                child: CircleAvatar(
+                  backgroundColor: (widget.isListening || _holding)
+                      ? Colors.blue
+                      : Theme.of(context).cardColor,
+                  radius: 26,
+                  child: (widget.isListening || _holding)
+                      ? Icon(Icons.mic_sharp, color: Colors.white, size: 30)
+                      : Icon(
+                          Icons.mic_none,
+                          color: Colors.grey.shade600,
+                          size: 30,
+                        ),
+                ),
               ),
             ),
-          ),
-          IconButton(icon: const Icon(Icons.send), onPressed: widget.onSend),
-        ],
+          ],
+        ),
       ),
     );
   }
