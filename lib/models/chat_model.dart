@@ -6,14 +6,15 @@ class ChatMessage {
 }
 
 class ChatChunk {
-  final String? delta; // new token from Gemini
-  final bool isFinal;
-  final Map<String, dynamic>? meta;
+  final String delta; // newly added token
+  final bool isFinal; // end-of-stream flag
+  final Map<String, dynamic>? meta; // token count, model name, etc.
 
-  ChatChunk({this.delta, this.isFinal = false, this.meta});
+  ChatChunk({required this.delta, this.isFinal = false, this.meta});
 }
 
 abstract class ChatModel {
+  /// Takes prompt + context and streams partial responses.
   Stream<ChatChunk> streamReply({
     required List<ChatMessage> messages,
     double? temperature,

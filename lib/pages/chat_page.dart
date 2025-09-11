@@ -5,8 +5,33 @@ import '../controllers/chat_controller.dart';
 import '../widgets/chat_bubble.dart';
 import '../widgets/input_area.dart';
 
-class ChatPage extends StatelessWidget {
+class ChatPage extends StatefulWidget {
   const ChatPage({super.key});
+
+  @override
+  State<ChatPage> createState() => _ChatPageState();
+}
+
+class _ChatPageState extends State<ChatPage> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,9 +54,7 @@ class ChatPage extends StatelessWidget {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    " • tokens: ${''}",
-                  ), // token display handled below if desired
+                  Obx(() => Text(" • tokens: ${ctrl.tokenCount.value}")),
                   const SizedBox(width: 8),
                   IconButton(
                     tooltip: 'Stop reply',
@@ -49,7 +72,12 @@ class ChatPage extends StatelessWidget {
           Expanded(
             child: Obx(() {
               final msgs = ctrl.messages;
+
+              // Auto-scroll whenever messages change
+              _scrollToBottom();
+
               return ListView.builder(
+                controller: _scrollController,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 itemCount: msgs.length,
                 itemBuilder: (context, index) {
@@ -68,13 +96,10 @@ class ChatPage extends StatelessWidget {
               );
             }),
           ),
-          //const Divider(height: 1),
-          // Input area: pass controller's messageController and mic callbacks
           Obx(() {
             return InputArea(
               controller: ctrl.messageController,
-              speech: ctrl
-                  .speech, // keeps backward compatibility; InputArea will prefer callbacks if provided
+              speech: ctrl.speech,
               isListening: ctrl.isListening.value,
               onListeningChanged: (listening) =>
                   ctrl.isListening.value = listening,

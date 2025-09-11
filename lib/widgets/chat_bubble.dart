@@ -35,22 +35,22 @@ class ChatBubble extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (!isUser && isActiveStream)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 6.0),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    SizedBox(
-                      width: 12,
-                      height: 12,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                    SizedBox(width: 8),
-                    Text("Typing...", style: TextStyle(fontSize: 12)),
-                  ],
-                ),
-              ),
+            // if (!isUser && isActiveStream)
+            //   Padding(
+            //     padding: const EdgeInsets.only(bottom: 6.0),
+            //     child: Row(
+            //       mainAxisSize: MainAxisSize.min,
+            //       children: const [
+            //         SizedBox(
+            //           width: 12,
+            //           height: 12,
+            //           child: CircularProgressIndicator(strokeWidth: 2),
+            //         ),
+            //         SizedBox(width: 8),
+            //         Text("Typing...", style: TextStyle(fontSize: 12)),
+            //       ],
+            //     ),
+            //   ),
             Text(
               (message.content.isEmpty || message.content == '...')
                   ? '...'

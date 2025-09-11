@@ -36,7 +36,6 @@ class ChatController extends GetxController {
     // Initialize speech and subscribe to partial transcripts
     speech.initialize().then((ok) {
       _partialSub = speech.partialStream.listen((partial) {
-        // Replace text with cumulative transcript (not resetting to empty)
         messageController.text = partial;
         messageController.selection = TextSelection.fromPosition(
           TextPosition(offset: messageController.text.length),
@@ -86,6 +85,7 @@ class ChatController extends GetxController {
     messageController.clear();
     messages.add(ChatMessage(role: 'user', content: text));
     messages.add(ChatMessage(role: 'model', content: '...'));
+
     final modelIndex = messages.length - 1;
     activeModelIndex.value = modelIndex;
     isStreaming.value = true;
@@ -97,20 +97,33 @@ class ChatController extends GetxController {
         .streamReply(messages: history)
         .listen(
           (chunk) {
-            if (chunk.delta != null && chunk.delta!.isNotEmpty) {
+            if (chunk.delta.isNotEmpty) {
               final old = messages[modelIndex];
               final newText = (old.content == '...')
-                  ? chunk.delta!
-                  : (old.content + chunk.delta!);
+                  ? chunk.delta
+                  : (old.content + chunk.delta);
               messages[modelIndex] = ChatMessage(
                 role: old.role,
                 content: newText,
               );
-              tokenCount.value++;
+
+              // ✅ use meta tokenCount from chunk
+              if (chunk.meta?['tokenCount'] != null) {
+                tokenCount.value = chunk.meta!['tokenCount'] as int;
+              } else {
+                tokenCount.value++;
+              }
             }
+
             if (chunk.isFinal) {
               isStreaming.value = false;
               activeModelIndex.value = -1;
+
+              // ✅ optional auto-play TTS
+              final reply = messages[modelIndex].content;
+              if (reply.isNotEmpty) {
+                tts.speak(reply);
+              }
             }
           },
           onError: (e) {
