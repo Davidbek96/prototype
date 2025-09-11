@@ -38,14 +38,16 @@ class ChatBubble extends StatelessWidget {
           children: [
             Text(
               (message.content.isEmpty || message.content == '...')
-                  ? '...'
+                  ? 'Thinking ...'
                   : message.content,
               style: TextStyle(
                 color: isUser ? Colors.white : Colors.black87,
                 fontSize: 16,
               ),
             ),
-            if (!isUser)
+            if (!isUser &&
+                message.content.isNotEmpty &&
+                message.content != '...')
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 mainAxisSize: MainAxisSize.min,
@@ -62,7 +64,7 @@ class ChatBubble extends StatelessWidget {
                   ),
                   IconButton(
                     tooltip: 'Retry',
-                    icon: const Icon(Icons.refresh, size: 20),
+                    icon: const Icon(Icons.refresh, size: 22),
                     onPressed: onRetry,
                   ),
                 ],

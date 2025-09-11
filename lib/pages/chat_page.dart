@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:testapp/widgets/show_list_empty.dart';
 
 import '../controllers/chat_controller.dart';
 import '../widgets/chat_bubble.dart';
@@ -107,6 +108,11 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
           Expanded(
             child: Obx(() {
               final msgs = ctrl.messages;
+
+              // If there are no messages show a friendly robot placeholder
+              if (msgs.isEmpty) {
+                return ShowListEmpty();
+              }
 
               // Auto-scroll whenever messages change
               _scrollToBottom();
