@@ -129,10 +129,10 @@ class _InputAreaState extends State<InputArea> {
 
                     // 📤 Send button (only when text exists)
                     if (hasText)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4.0),
-                        child: GestureDetector(
-                          onTap: widget.onSend,
+                      InkWell(
+                        onTap: widget.onSend,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4.0),
                           child: const Icon(
                             Icons.send,
                             color: Colors.blue, // iOS blue
