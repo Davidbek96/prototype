@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>JOI WebView Demo</title>
+    <style>
+        :root {
+            --primary: #4f83cc;
+            --primary-hover: #3c6bb3;
+
+            --secondary: #5aa382;
+            --secondary-hover: #478c6e;
+
+            --warning: #e6a450;
+            --warning-hover: #cc8a38;
+
+            --info: #56b0d6;
+            --info-hover: #3f97bd;
+
+            --background: #f5f7fa;
+            --surface: #ffffff;
+            --border: #e1e4e8;
+            --text: #1f2937;
+            --radius: 12px;
+        }
+
+        body {
+            font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+            margin: 0;
+            padding: 24px;
+            background: var(--background);
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        h2,
+        h3 {
+            margin-top: 0;
+            font-weight: 600;
+        }
+
+        h2 {
+            font-size: 1.6rem;
+            margin-bottom: 1rem;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+        }
+
+        .action-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 16px;
+            border-radius: var(--radius);
+            border: none;
+            color: white;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s ease, transform 0.1s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        }
+
+        .action-btn:active {
+            transform: scale(0.97);
+        }
+
+        .primary {
+            background: var(--primary);
+        }
+
+        .primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .secondary {
+            background: var(--secondary);
+        }
+
+        .secondary:hover {
+            background: var(--secondary-hover);
+        }
+
+        .warning {
+            background: var(--warning);
+        }
+
+        .warning:hover {
+            background: var(--warning-hover);
+        }
+
+        .info {
+            background: var(--info);
+        }
+
+        .info:hover {
+            background: var(--info-hover);
+        }
+
+        .status-rows {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .status-row {
+            display: flex;
+            gap: 6px;
+            font-size: 0.95rem;
+            flex-wrap: wrap;
+            /* allows long messages to wrap nicely */
+        }
+
+        .log-controls {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .log-controls h3 {
+            margin: 0;
+        }
+
+        .log-btn {
+            padding: 6px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: #f3f4f6;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.2s ease, border 0.2s ease;
+        }
+
+        .log-btn:hover {
+            background: #e5e7eb;
+            border-color: #d1d5db;
+        }
+
+        #log {
+            background: #111827;
+            color: #f3f4f6;
+            padding: 12px;
+            border-radius: var(--radius);
+            height: 160px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin: 0;
+            font-family: monospace;
+            font-size: 0.85rem;
+            border: 1px solid #1f2937;
+        }
+
+        code {
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>WebView ↔ Native Hook</h2>
+
+    <div class="card">
+        <div class="actions">
+            <button class="action-btn primary" onclick="sendAction('vibrate')">🔔 Vibrate</button>
+            <button class="action-btn secondary" onclick="sendAction('getDeviceInfo')">📱 Device Info</button>
+            <button class="action-btn warning" onclick="sendAction('copyToClipboard', {text: 'Hello from WebView'})">📋
+                Copy Text</button>
+            <button class="action-btn info" onclick="sendAction('pickImage')">🖼️ Pick Image</button>
+        </div>
+
+        <div class="status-rows">
+            <div class="status-row">
+                <strong>Timer:</strong> <span id="tick">0</span>
+            </div>
+            <div class="status-row">
+                <strong>Battery:</strong> <span id="battery">unknown</span>
+            </div>
+            <div class="status-row">
+                <strong>Network:</strong> <span id="network">unknown</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="log-controls">
+            <h3>Log</h3>
+            <button class="log-btn" onclick="toggleTickLogs()" id="tickLogBtn">Show Tick Logs</button>
+            <button class="log-btn" onclick="clearLog()" id="clearLogBtn">Clear Log</button>
+        </div>
+        <pre id="log"></pre>
+    </div>
+
+    <script>
+        let showTickLogs = false;
+
+        function uuid() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                const r = Math.random() * 16 | 0,
+                    v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        function log(msg) {
+            const pre = document.getElementById('log');
+            pre.textContent += "\n" + msg;
+            pre.scrollTop = pre.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').textContent = "";
+        }
+
+        function sendAction(action, payload = {}) {
+            const message = {
+                type: 'request',
+                action,
+                requestId: uuid(),
+                payload
+            };
+            try {
+                if (window.JOI && typeof window.JOI.postMessage === 'function') {
+                    window.JOI.postMessage(JSON.stringify(message));
+                    log('[JS→Native] ' + JSON.stringify(message));
+                } else {
+                    alert('JOI.postMessage not available');
+                }
+            } catch (e) {
+                alert('Failed to send: ' + e);
+            }
+        }
+
+        function toggleTickLogs() {
+            showTickLogs = !showTickLogs;
+            document.getElementById('tickLogBtn').innerText =
+                showTickLogs ? "Hide Tick Logs" : "Show Tick Logs";
+        }
+
+        // Native callback
+        window.JOI.onMessage = function (data) {
+            try {
+                const obj = (typeof data === 'string') ? JSON.parse(data) : data;
+                if (obj && obj.type === 'event') {
+                    switch (obj.action) {
+                        case 'nativeTick':
+                            document.getElementById('tick').textContent = obj.payload?.tick ?? 0;
+                            if (showTickLogs) log('[Native→JS] ' + JSON.stringify(obj));
+                            break;
+                        case 'batteryState':
+                            document.getElementById('battery').textContent = obj.payload?.state ?? 'unknown';
+                            log('[Native→JS] ' + JSON.stringify(obj));
+                            break;
+                        case 'connectivity':
+                            document.getElementById('network').textContent = obj.payload?.status ?? 'unknown';
+                            log('[Native→JS] ' + JSON.stringify(obj));
+                            break;
+                        default:
+                            log('[Native→JS] ' + JSON.stringify(obj));
+                    }
+                } else {
+                    log('[Native→JS] ' + JSON.stringify(obj));
+                }
+            } catch (e) {
+                log('[Native→JS] (invalid json) ' + data);
+            }
+        };
+
+    </script>
+</body>
+
+</html>
