@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:http/http.dart' as http;
 
 class SettingsController extends GetxController {
   final GetStorage _box = GetStorage();
@@ -22,7 +24,6 @@ class SettingsController extends GetxController {
     {'code': 'de-DE', 'label': 'German'},
     {'code': 'es-ES', 'label': 'Spanish'},
     {'code': 'hi-IN', 'label': 'Hindi'},
-    // add more if needed
   ];
 
   // UI state
@@ -33,7 +34,10 @@ class SettingsController extends GetxController {
   void onInit() {
     super.onInit();
     apiKeyController = TextEditingController(text: _box.read('apiKey') ?? '');
-    apiKeyIsSet.value = (apiKeyController.text.trim().isNotEmpty);
+    apiKeyIsSet.value = (_box.read('apiKey') ?? '')
+        .toString()
+        .trim()
+        .isNotEmpty;
     autoPlayTts.value = _box.read('autoPlayTts') ?? false;
     ttsLanguage.value =
         _box.read('ttsLanguage') ?? (_box.read('language') ?? 'en-US');
@@ -41,20 +45,59 @@ class SettingsController extends GetxController {
         _box.read('sttLanguage') ?? (_box.read('language') ?? 'en-US');
   }
 
-  /// Save API key to storage (explicit Save button)
+  /// Validate API key by calling a lightweight endpoint and then persist.
+  ///
+  /// Uses a short timeout. Shows snackbar for invalid key or network error.
   Future<void> saveApiKey() async {
-    final key = apiKeyController.text.trim();
+    final candidate = apiKeyController.text.trim();
+    if (candidate.isEmpty) {
+      // treat empty as "remove stored key"
+      await _box.remove('apiKey');
+      apiKeyIsSet.value = false;
+      Get.snackbar('Settings', 'No API key provided (storage cleared)');
+      return;
+    }
+
     isSaving.value = true;
     try {
-      if (key.isEmpty) {
-        apiKeyIsSet.value = false;
-        _box.remove('apiKey');
-        Get.snackbar('Setting', 'API key not saved');
-      } else {
-        _box.write('apiKey', key);
+      // a simple validation request to the Generative Language "models" endpoint
+      // note: header name is case-insensitive; using X-Goog-Api-Key as used elsewhere.
+      final uri = Uri.parse(
+        'https://generativelanguage.googleapis.com/v1beta/models',
+      );
+      final resp = await http
+          .get(uri, headers: {'X-Goog-Api-Key': candidate})
+          .timeout(const Duration(seconds: 8));
+
+      if (resp.statusCode == 200) {
+        // key is valid — persist it
+        await _box.write('apiKey', candidate);
         apiKeyIsSet.value = true;
+
+        // Dismiss keyboard and clear the input so the TextField is empty after save
+        FocusManager.instance.primaryFocus?.unfocus();
+        apiKeyController.clear();
+
         Get.snackbar('Settings', 'API key saved');
+      } else {
+        // likely invalid / unauthorized; surface a helpful message
+        final msg = (resp.statusCode == 401 || resp.statusCode == 403)
+            ? 'Invalid API key (unauthorized)'
+            : 'Invalid API key (HTTP ${resp.statusCode})';
+        Get.snackbar('Settings', msg, backgroundColor: Colors.red.shade100);
       }
+    } on TimeoutException {
+      Get.snackbar(
+        'Settings',
+        'Validation timed out — check network or try again.',
+        backgroundColor: Colors.orange.shade100,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Settings',
+        'Failed to validate API key: $e',
+        backgroundColor: Colors.red.shade100,
+      );
     } finally {
       isSaving.value = false;
     }
@@ -63,7 +106,7 @@ class SettingsController extends GetxController {
   /// Clear API key (with confirm from UI)
   Future<void> clearApiKey() async {
     apiKeyController.clear();
-    _box.remove('apiKey');
+    await _box.remove('apiKey');
     apiKeyIsSet.value = false;
   }
 

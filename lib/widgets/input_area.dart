@@ -1,8 +1,7 @@
 // lib/widgets/input_area.dart
 import 'package:flutter/material.dart';
-import 'package:avatar_glow/avatar_glow.dart';
+import 'package:testapp/widgets/mic_pulse_btn.dart';
 import '../services/speech_service.dart';
-import 'dart:async';
 
 class InputArea extends StatefulWidget {
   final TextEditingController controller;
@@ -10,8 +9,6 @@ class InputArea extends StatefulWidget {
   final VoidCallback onSend;
   final bool isListening;
   final void Function(bool listening)? onListeningChanged;
-
-  // New optional callbacks - prefer these when provided (allows GetX controller to manage STT)
   final Future<void> Function()? onMicStart;
   final Future<void> Function()? onMicEnd;
 
@@ -37,20 +34,12 @@ class _InputAreaState extends State<InputArea> {
     setState(() => _holding = true);
     widget.onListeningChanged?.call(true);
     if (widget.onMicStart != null) {
-      try {
-        await widget.onMicStart!();
-      } catch (e) {
-        debugPrint("InputArea.onMicStart error: $e");
-      }
+      await widget.onMicStart!();
     } else if (widget.speech != null) {
-      try {
-        await widget.speech!.startListening(
-          requestPermission: true,
-          listenFor: Duration.zero,
-        );
-      } catch (e) {
-        debugPrint("InputArea.startListening error: $e");
-      }
+      await widget.speech!.startListening(
+        requestPermission: true,
+        listenFor: Duration.zero,
+      );
     }
   }
 
@@ -58,17 +47,9 @@ class _InputAreaState extends State<InputArea> {
     setState(() => _holding = false);
     widget.onListeningChanged?.call(false);
     if (widget.onMicEnd != null) {
-      try {
-        await widget.onMicEnd!();
-      } catch (e) {
-        debugPrint("InputArea.onMicEnd error: $e");
-      }
+      await widget.onMicEnd!();
     } else if (widget.speech != null) {
-      try {
-        await widget.speech!.stopListening();
-      } catch (e) {
-        debugPrint("InputArea.stopListening error: $e");
-      }
+      await widget.speech!.stopListening();
     }
   }
 
@@ -79,13 +60,11 @@ class _InputAreaState extends State<InputArea> {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
-
         borderRadius: BorderRadius.circular(15),
         border: Border(
           top: BorderSide(color: Colors.grey.withAlpha(50), width: 2),
         ),
       ),
-      //color: Theme.of(context).cardColor, // light grey background
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 10),
         child: Row(
@@ -107,7 +86,6 @@ class _InputAreaState extends State<InputArea> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    // Text field
                     Expanded(
                       child: TextField(
                         controller: widget.controller,
@@ -126,50 +104,23 @@ class _InputAreaState extends State<InputArea> {
                         ),
                       ),
                     ),
-
-                    // 📤 Send button (only when text exists)
                     if (hasText)
                       InkWell(
                         onTap: widget.onSend,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4.0),
-                          child: const Icon(
-                            Icons.send,
-                            color: Colors.blue, // iOS blue
-                          ),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 4.0),
+                          child: Icon(Icons.send, color: Colors.blue),
                         ),
                       ),
                   ],
                 ),
               ),
             ),
-
             const SizedBox(width: 8),
-
-            // 🎤 Microphone with glowing wave (always visible)
-            AvatarGlow(
-              animate: widget.isListening || _holding,
-              glowColor: Colors.blue.withValues(alpha: 0.6),
-              duration: const Duration(milliseconds: 1200),
-              curve: Curves.easeOut,
-              repeat: true,
-              child: GestureDetector(
-                onLongPressStart: (_) => _handleLongPressStart(),
-                onLongPressEnd: (_) => _handleLongPressEnd(),
-                child: CircleAvatar(
-                  backgroundColor: (widget.isListening || _holding)
-                      ? Colors.blue
-                      : Theme.of(context).cardColor,
-                  radius: 26,
-                  child: (widget.isListening || _holding)
-                      ? Icon(Icons.mic_sharp, color: Colors.white, size: 30)
-                      : Icon(
-                          Icons.mic_none,
-                          color: Colors.grey.shade600,
-                          size: 30,
-                        ),
-                ),
-              ),
+            MicOnButton(
+              isActive: widget.isListening || _holding,
+              onLongPressStart: (_) => _handleLongPressStart(),
+              onLongPressEnd: (_) => _handleLongPressEnd(),
             ),
           ],
         ),
