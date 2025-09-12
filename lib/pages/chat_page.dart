@@ -5,6 +5,7 @@ import 'package:testapp/widgets/show_list_empty.dart';
 import '../controllers/chat_controller.dart';
 import '../widgets/chat_bubble.dart';
 import '../widgets/input_area.dart';
+import 'settings_page.dart'; // <--- import the settings page
 
 class ChatPage extends StatefulWidget {
   const ChatPage({super.key});
@@ -78,7 +79,16 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
         title: const Text("Gemini Chatbot"),
         actions: [
           Obx(() {
-            if (!ctrl.isStreaming.value) return const SizedBox.shrink();
+            if (!ctrl.isStreaming.value) {
+              return IconButton(
+                tooltip: 'Settings',
+                icon: const Icon(Icons.settings),
+                onPressed: () {
+                  // Navigate to settings page using Get
+                  Get.to(() => const SettingsPage());
+                },
+              );
+            }
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
               child: Row(
