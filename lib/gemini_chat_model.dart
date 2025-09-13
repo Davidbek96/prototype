@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'models/chat_model.dart';
 
-/// Robust Gemini streaming adapter: guards against adding events after the
 /// stream controller is closed and cleans up timers/subscriptions on cancel.
 class GeminiChatModel implements ChatModel {
   final String apiKey;

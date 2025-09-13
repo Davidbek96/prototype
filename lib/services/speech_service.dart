@@ -33,10 +33,14 @@ class SpeechService {
     try {
       _available = await _speech.initialize(
         onStatus: (status) {
-          _statusController.add(status);
+          try {
+            _statusController.add(status);
+          } catch (_) {}
         },
         onError: (err) {
-          _errorController.add(err);
+          try {
+            _errorController.add(err);
+          } catch (_) {}
         },
       );
     } catch (e) {
@@ -52,20 +56,35 @@ class SpeechService {
   }
 
   /// Start listening with long session (dictation mode).
+  /// Defaults are intentionally large to support press-and-hold behavior.
   Future<bool> startListening({
     bool requestPermission = true,
-    Duration listenFor = const Duration(minutes: 5),
-    Duration pauseFor = const Duration(seconds: 10),
+    Duration listenFor = const Duration(hours: 1),
+    Duration pauseFor = const Duration(hours: 1),
     String? localeId,
   }) async {
+    // If already listening, return true immediately.
+    if (_speech.isListening) return true;
+
+    // Permission handling: check current status first before requesting.
     if (requestPermission) {
-      final status = await Permission.microphone.request();
-      if (!status.isGranted) {
-        _errorController.add('microphone_permission_denied');
+      try {
+        final status = await Permission.microphone.status;
+        if (!status.isGranted) {
+          final result = await Permission.microphone.request();
+          if (!result.isGranted) {
+            _errorController.add('microphone_permission_denied');
+            return false;
+          }
+        }
+      } catch (e) {
+        // If permission check/request throws, propagate to error stream but continue to initialization attempt.
+        _errorController.add(e);
         return false;
       }
     }
 
+    // Ensure plugin initialized
     if (!_available) {
       final ok = await initialize();
       if (!ok) {
@@ -77,7 +96,9 @@ class SpeechService {
     try {
       await _speech.listen(
         onResult: (result) {
-          _partialController.add(result.recognizedWords);
+          try {
+            _partialController.add(result.recognizedWords);
+          } catch (_) {}
         },
         listenFor: listenFor,
         pauseFor: pauseFor,
@@ -88,7 +109,9 @@ class SpeechService {
           cancelOnError: true,
         ),
         onSoundLevelChange: (level) {
-          _soundLevelController.add(level.toDouble());
+          try {
+            _soundLevelController.add(level.toDouble());
+          } catch (_) {}
         },
       );
       return true;
@@ -98,7 +121,7 @@ class SpeechService {
     }
   }
 
-  /// Stop listening (graceful)
+  /// Stop listening (graceful).
   Future<void> stopListening() async {
     try {
       if (_speech.isListening) {

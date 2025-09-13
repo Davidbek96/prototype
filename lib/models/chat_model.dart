@@ -1,3 +1,12 @@
+abstract class ChatModel {
+  /// Takes prompt + context and streams partial responses.
+  Stream<ChatChunk> streamReply({
+    required List<ChatMessage> messages,
+    double? temperature,
+    Map<String, dynamic>? options,
+  });
+}
+
 class ChatMessage {
   final String role; // "user" or "model"
   final String content;
@@ -11,13 +20,4 @@ class ChatChunk {
   final Map<String, dynamic>? meta; // token count, model name, etc.
 
   ChatChunk({required this.delta, this.isFinal = false, this.meta});
-}
-
-abstract class ChatModel {
-  /// Takes prompt + context and streams partial responses.
-  Stream<ChatChunk> streamReply({
-    required List<ChatMessage> messages,
-    double? temperature,
-    Map<String, dynamic>? options,
-  });
 }

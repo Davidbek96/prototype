@@ -1,3 +1,4 @@
+// lib/controllers/chat_controller.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -31,7 +32,7 @@ class ChatController extends GetxController {
 
   StreamSubscription<String>? _partialSub;
   StreamSubscription<String>? _statusSub;
-  StreamSubscription? _streamingSub;
+  StreamSubscription<ChatChunk>? _streamingSub;
 
   // Helper to access settings controller (ensure registered)
   SettingsController get _settings {
@@ -122,8 +123,8 @@ class ChatController extends GetxController {
       // Check current microphone permission state first
       final micStatus = await Permission.microphone.status;
 
-      // If permanently denied, show clear instructions and offer to open app settings
       if (micStatus.isPermanentlyDenied) {
+        // Permanently denied -> tell user how to open settings
         Get.defaultDialog(
           title: 'Microphone Access Required',
           contentPadding: const EdgeInsets.only(
@@ -142,40 +143,23 @@ class ChatController extends GetxController {
             Get.back(); // close dialog
             await openAppSettings();
           },
-          onCancel: () {},
         );
         return;
       }
 
-      // If denied but not permanent, request permission
-      if (micStatus.isDenied || micStatus.isRestricted || micStatus.isLimited) {
-        // if (result.isPermanentlyDenied) {
-        // User selected "Don't ask again" — direct them to settings
-        Get.defaultDialog(
-          title: 'Microphone Access Required',
-          contentPadding: const EdgeInsets.only(
-            bottom: 20,
-            left: 16,
-            right: 16,
-          ),
-          titlePadding: const EdgeInsets.only(top: 16),
-          middleText:
-              'Microphone permission is permanently denied. '
-              'Please enable it from App Settings to use voice input.',
-          textCancel: 'Cancel',
-          textConfirm: 'Open Settings',
-          confirmTextColor: Colors.white,
-          onConfirm: () async {
-            Get.back();
-            await openAppSettings();
-          },
-          onCancel: () {},
-        );
-        return;
+      // If not granted, request permission
+      if (!micStatus.isGranted) {
+        final result = await Permission.microphone.request();
+        if (!result.isGranted) {
+          Get.snackbar(
+            'Permission denied',
+            'Microphone permission is required to use voice input.',
+          );
+          return;
+        }
       }
 
       // Permission is granted — start listening.
-      // Pass requestPermission: false because we already handled it here.
       final locale = _settings.sttLanguage.value;
       final started = await speech.startListening(
         requestPermission: false,
@@ -202,15 +186,14 @@ class ChatController extends GetxController {
       debugPrint("ChatController.stopListening error: $e");
     }
     if (submit) {
-      sendMessage();
+      await sendMessage();
     }
   }
 
   /// Send message (from send button) — performs an async connectivity check first.
-  /// Kept as a `void` function so it can be passed to UI callbacks that expect `VoidCallback`.
   Future<void> sendMessage() async {
     try {
-      // perform connectivity check first (handle both list and single-return shapes)
+      // perform connectivity check first
       final dynamic rawConn = await Connectivity().checkConnectivity();
 
       final bool isOffline = (rawConn is ConnectivityResult)
@@ -234,7 +217,11 @@ class ChatController extends GetxController {
 
       if (_gemini == null) {
         Get.defaultDialog(
-          contentPadding: EdgeInsets.only(bottom: 30, left: 20, right: 20),
+          contentPadding: const EdgeInsets.only(
+            bottom: 30,
+            left: 20,
+            right: 20,
+          ),
           title: "Missing API Key",
           middleText:
               "Please set your Gemini API key in Settings before sending messages.",
@@ -249,7 +236,6 @@ class ChatController extends GetxController {
               duration: const Duration(milliseconds: 250),
             );
           },
-          onCancel: () {},
         );
         return;
       }
@@ -284,7 +270,6 @@ class ChatController extends GetxController {
             (chunk) async {
               if (modelIndex < 0 || modelIndex >= messages.length) return;
 
-              // chunk.delta is non-nullable in your environment.
               final delta = chunk.delta;
               if (delta.isNotEmpty) {
                 final old = messages[modelIndex];
@@ -297,6 +282,7 @@ class ChatController extends GetxController {
                 );
               }
 
+              // token/meta handling
               if (chunk.meta != null) {
                 final meta = chunk.meta!;
                 if (meta['tokenCount'] != null) {
@@ -357,11 +343,7 @@ class ChatController extends GetxController {
                     ? messages[modelIndex].content
                     : '';
                 if (reply.isNotEmpty && _settings.autoPlayTts.value) {
-                  try {
-                    await tts.speak(reply, locale: _settings.ttsLanguage.value);
-                  } catch (e) {
-                    debugPrint('TTS play error: $e');
-                  }
+                  _playTts(reply);
                 }
 
                 try {
@@ -419,7 +401,9 @@ class ChatController extends GetxController {
     final gemini = _gemini!;
 
     // Cancel existing stream
-    _streamingSub?.cancel();
+    try {
+      _streamingSub?.cancel();
+    } catch (_) {}
     _streamingSub = null;
 
     // Remove everything after the user message
@@ -436,10 +420,7 @@ class ChatController extends GetxController {
     tokenCount.value = 0;
 
     // Build history up to user message (inclusive)
-    final history = messages
-        .sublist(0, userIndex + 1)
-        .map((m) => ChatMessage(role: m.role, content: m.content))
-        .toList();
+    final history = messages.sublist(0, userIndex + 1);
 
     _streamingSub = gemini
         .streamReply(messages: history)
@@ -496,11 +477,7 @@ class ChatController extends GetxController {
               activeModelIndex.value = -1;
               final reply = messages[modelIndex].content;
               if (reply.isNotEmpty && _settings.autoPlayTts.value) {
-                try {
-                  await tts.speak(reply, locale: _settings.ttsLanguage.value);
-                } catch (e) {
-                  debugPrint('TTS play error: $e');
-                }
+                _playTts(reply);
               }
             }
           },
@@ -521,11 +498,23 @@ class ChatController extends GetxController {
         );
   }
 
+  /// Stop current streaming (if any)
   void stopStreaming() {
-    _streamingSub?.cancel();
+    try {
+      _streamingSub?.cancel();
+    } catch (_) {}
     _streamingSub = null;
     isStreaming.value = false;
     activeModelIndex.value = -1;
+  }
+
+  /// Play TTS (non-blocking from caller). Errors are caught and printed.
+  Future<void> _playTts(String text) async {
+    try {
+      await tts.speak(text, locale: _settings.ttsLanguage.value);
+    } catch (e) {
+      debugPrint('TTS play error: $e');
+    }
   }
 
   @override
