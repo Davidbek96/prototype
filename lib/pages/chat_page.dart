@@ -28,9 +28,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   @override
   void dispose() {
     // Ensure TTS is stopped and clean up
-    try {
-      _ctrl.tts.stop();
-    } catch (_) {}
+    _ctrl.stopTtsSafe();
     WidgetsBinding.instance.removeObserver(this);
     _scrollController.dispose();
     super.dispose();
@@ -38,23 +36,18 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
 
   @override
   void deactivate() {
-    // Called when the widget is removed from the widget tree or covered by another route.
-    // Stop any ongoing TTS so it doesn't keep playing when the user navigates away.
-    try {
-      _ctrl.tts.stop();
-    } catch (_) {}
+    // Stop any ongoing TTS when widget is removed or covered
+    _ctrl.stopTtsSafe();
     super.deactivate();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // If the app loses focus/paused, stop TTS to avoid background playback
+    // If the app loses focus/paused, stop TTS
     if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
-      try {
-        _ctrl.tts.stop();
-      } catch (_) {}
+      _ctrl.stopTtsSafe();
     }
   }
 
@@ -84,7 +77,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                 tooltip: 'Settings',
                 icon: const Icon(Icons.settings),
                 onPressed: () {
-                  // Navigate to settings page using Get
+                  ctrl.stopTtsSafe(); // stop TTS before navigating
                   Get.to(() => const SettingsPage());
                 },
               );
@@ -149,14 +142,15 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                   return ChatBubble(
                     message: msg,
                     isActiveStream: isActive,
-                    onReplay: () => ctrl.tts.speak(msg.content),
-                    onStopTts: () {
-                      try {
-                        ctrl.tts.stop();
-                      } catch (_) {}
+                    onReplay: () {
+                      ctrl.tts.speak(msg.content);
                     },
+                    onStopTts: ctrl.stopTtsSafe,
+                    onCopy: () => ctrl.copyChat(context, msg.content),
                     onRetry: userIndex >= 0
-                        ? () => ctrl.retryMessage(userIndex)
+                        ? () {
+                            ctrl.retryMessage(userIndex);
+                          }
                         : null,
                   );
                 },
@@ -170,7 +164,9 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
               isListening: ctrl.isListening.value,
               onListeningChanged: (listening) =>
                   ctrl.isListening.value = listening,
-              onSend: ctrl.sendMessage,
+              onSend: () {
+                ctrl.sendMessage();
+              },
               onMicStart: ctrl.startListening,
               onMicEnd: () => ctrl.stopListening(submit: false),
             );

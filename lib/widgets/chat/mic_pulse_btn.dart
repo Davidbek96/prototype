@@ -1,6 +1,9 @@
 // lib/widgets/mic_pulse_btn.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:get/get_navigation/get_navigation.dart';
+import 'package:get/utils.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class MicOnButton extends StatefulWidget {
   final bool isActive; // true when system is listening or holding
@@ -26,8 +29,7 @@ class _MicOnButtonState extends State<MicOnButton>
   late final AnimationController _animController;
   double _smoothedLevel = 0.0;
 
-  // local subscription option (not required — we accept volumeLevel prop)
-  StreamSubscription<double>? _directSub;
+  bool _hasMicPermission = false;
 
   @override
   void initState() {
@@ -36,42 +38,94 @@ class _MicOnButtonState extends State<MicOnButton>
       vsync: this,
       duration: const Duration(milliseconds: 1300),
     );
+    _animController.value = 0.0;
 
-    _animController.value = 0.0; // idle until overlay starts
+    _checkPermission();
+  }
+
+  Future<void> _checkPermission() async {
+    final status = await Permission.microphone.status;
+    if (mounted) {
+      setState(() => _hasMicPermission = status.isGranted);
+    }
+  }
+
+  Future<bool> _requestPermissionIfNeeded() async {
+    if (_hasMicPermission) return true;
+
+    final status = await Permission.microphone.request();
+    final granted = status.isGranted;
+    if (mounted) {
+      setState(() => _hasMicPermission = granted);
+    }
+
+    if (!granted) {
+      _showPermissionDialog();
+    }
+
+    return granted;
+  }
+
+  void _showPermissionDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Microphone Permission Required"),
+        content: const Text(
+          "To use voice input, please allow microphone access in your device settings:\n\n"
+          "• Open Settings\n"
+          "• Go to App Permissions\n"
+          "• Enable Microphone access",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await openAppSettings();
+            },
+            child: const Text("Open Settings"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   void didUpdateWidget(covariant MicOnButton oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Smooth incoming raw volume (simple low-pass)
     final newNorm = _normalizeLevel(widget.volumeLevel);
     _smoothedLevel = _smoothedLevel * 0.7 + newNorm * 0.3;
 
-    // Show/hide overlay based on isActive
-    if (!oldWidget.isActive && widget.isActive) {
-      _showOverlay();
-    } else if (oldWidget.isActive && !widget.isActive) {
-      _hideOverlay();
-    } else {
-      if (_overlayEntry != null) {
-        // Defer rebuild until after current frame
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _overlayEntry?.markNeedsBuild();
-        });
+    if (_hasMicPermission) {
+      if (!oldWidget.isActive && widget.isActive) {
+        // ✅ Only show overlay if mic is actually active (not just permission granted)
+        _showOverlay();
+      } else if (oldWidget.isActive && !widget.isActive) {
+        _hideOverlay();
+      } else {
+        if (_overlayEntry != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _overlayEntry?.markNeedsBuild();
+          });
+        }
       }
+    } else {
+      _hideOverlay();
     }
   }
 
   double _normalizeLevel(double raw) {
-    // speech_to_text typically emits around -50..0 (platform dependent)
-    // map -50 -> 0.0, 0 -> 1.0. clamp extras.
     final norm = ((raw + 50.0) / 50.0).clamp(0.0, 1.0);
     return norm;
   }
 
   void _showOverlay() {
-    if (_overlayEntry != null) return;
+    if (_overlayEntry != null || !_hasMicPermission) return;
     final renderBox = context.findRenderObject() as RenderBox?;
     if (renderBox == null || !mounted) return;
 
@@ -79,8 +133,6 @@ class _MicOnButtonState extends State<MicOnButton>
     final btnSize = renderBox.size;
 
     const overlaySide = 180.0;
-
-    // Place overlay exactly centered on mic button
     final left = btnOffset.dx + (btnSize.width / 2) - (overlaySide / 2);
     final top = btnOffset.dy + (btnSize.height / 2) - (overlaySide / 2);
 
@@ -96,7 +148,7 @@ class _MicOnButtonState extends State<MicOnButton>
             child: AnimatedBuilder(
               animation: _animController,
               builder: (context, child) {
-                final t = _animController.value; // 0..1
+                final t = _animController.value;
                 final loudness = 0.8 + (_smoothedLevel * 1.6);
 
                 Widget ring(
@@ -130,7 +182,6 @@ class _MicOnButtonState extends State<MicOnButton>
                 return Stack(
                   alignment: Alignment.center,
                   children: [
-                    // soft glow background
                     Container(
                       width: base * 1.8 * loudness,
                       height: base * 1.8 * loudness,
@@ -147,12 +198,9 @@ class _MicOnButtonState extends State<MicOnButton>
                         ],
                       ),
                     ),
-
                     ring(0.0, base, 4.0, 0.55),
                     ring(0.33, base, 3.0, 0.38),
                     ring(0.66, base, 2.0, 0.28),
-
-                    // central blue disc with mic icon
                     Container(
                       width: 86.0 * (0.9 + _smoothedLevel * 0.45),
                       height: 86.0 * (0.9 + _smoothedLevel * 0.45),
@@ -198,27 +246,41 @@ class _MicOnButtonState extends State<MicOnButton>
   void dispose() {
     _hideOverlay();
     _animController.dispose();
-    _directSub?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final active = _hasMicPermission && widget.isActive;
+
     return GestureDetector(
-      onLongPressStart: (details) {
-        widget.onLongPressStart?.call(details);
-        _showOverlay();
+      onTap: () async {
+        if (!await _requestPermissionIfNeeded()) {
+          return; // dialog already shown
+        }
+        Get.snackbar(
+          "Hold Microphone!",
+          'Please keep holding microphone to talk',
+        );
+      },
+      onLongPressStart: (details) async {
+        if (await _requestPermissionIfNeeded()) {
+          widget.onLongPressStart?.call(details);
+          _showOverlay();
+        }
       },
       onLongPressEnd: (details) {
-        widget.onLongPressEnd?.call(details);
-        _hideOverlay();
+        if (_hasMicPermission) {
+          widget.onLongPressEnd?.call(details);
+          _hideOverlay();
+        }
       },
       child: CircleAvatar(
-        backgroundColor: widget.isActive ? Colors.blue : Colors.grey.shade200,
+        backgroundColor: active ? Colors.blue : Colors.grey.shade200,
         radius: 28,
         child: Icon(
-          widget.isActive ? Icons.mic : Icons.mic_none,
-          color: widget.isActive ? Colors.white : Colors.grey.shade700,
+          active ? Icons.mic : Icons.mic_none,
+          color: active ? Colors.white : Colors.grey.shade700,
           size: 30,
         ),
       ),

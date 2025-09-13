@@ -33,11 +33,16 @@ class SettingsController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    apiKeyController = TextEditingController(text: _box.read('apiKey') ?? '');
+
+    // For privacy, start the TextField empty. The actual "is set" state is
+    // determined from storage (so clearing the text field does NOT remove the stored value).
+    apiKeyController = TextEditingController(text: '');
+
     apiKeyIsSet.value = (_box.read('apiKey') ?? '')
         .toString()
         .trim()
         .isNotEmpty;
+
     autoPlayTts.value = _box.read('autoPlayTts') ?? false;
     ttsLanguage.value =
         _box.read('ttsLanguage') ?? (_box.read('language') ?? 'en-US');
@@ -46,12 +51,10 @@ class SettingsController extends GetxController {
   }
 
   /// Validate API key by calling a lightweight endpoint and then persist.
-  ///
-  /// Uses a short timeout. Shows snackbar for invalid key or network error.
   Future<void> saveApiKey() async {
     final candidate = apiKeyController.text.trim();
     if (candidate.isEmpty) {
-      // treat empty as "remove stored key"
+      // treat empty as "remove stored key" — this is an explicit user intent.
       await _box.remove('apiKey');
       apiKeyIsSet.value = false;
       Get.snackbar('Settings', 'No API key provided (storage cleared)');
@@ -60,8 +63,6 @@ class SettingsController extends GetxController {
 
     isSaving.value = true;
     try {
-      // a simple validation request to the Generative Language "models" endpoint
-      // note: header name is case-insensitive; using X-Goog-Api-Key as used elsewhere.
       final uri = Uri.parse(
         'https://generativelanguage.googleapis.com/v1beta/models',
       );
@@ -74,13 +75,12 @@ class SettingsController extends GetxController {
         await _box.write('apiKey', candidate);
         apiKeyIsSet.value = true;
 
-        // Dismiss keyboard and clear the input so the TextField is empty after save
+        // Dismiss keyboard and clear the input for privacy
         FocusManager.instance.primaryFocus?.unfocus();
         apiKeyController.clear();
 
         Get.snackbar('Settings', 'API key saved');
       } else {
-        // likely invalid / unauthorized; surface a helpful message
         final msg = (resp.statusCode == 401 || resp.statusCode == 403)
             ? 'Invalid API key (unauthorized)'
             : 'Invalid API key (HTTP ${resp.statusCode})';
@@ -105,6 +105,7 @@ class SettingsController extends GetxController {
 
   /// Clear API key (with confirm from UI)
   Future<void> clearApiKey() async {
+    // Clear UI and storage explicitly when user confirms deletion
     apiKeyController.clear();
     await _box.remove('apiKey');
     apiKeyIsSet.value = false;

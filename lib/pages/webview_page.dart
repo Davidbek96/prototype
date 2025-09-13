@@ -16,6 +16,7 @@ class WebViewPage extends StatelessWidget {
           SafeArea(
             child: WebViewWidget(controller: controller.webViewController),
           ),
+          // Loader
           Obx(
             () => controller.isLoading.value
                 ? Container(
@@ -23,6 +24,24 @@ class WebViewPage extends StatelessWidget {
                     child: const Center(child: CircularProgressIndicator()),
                   )
                 : const SizedBox.shrink(),
+          ),
+          // Back button
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.all(6.0),
+                child: CircleAvatar(
+                  backgroundColor: Colors.black.withValues(alpha: 0.4),
+                  child: IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () {
+                      Get.back(); // exit page if no history
+                    },
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),

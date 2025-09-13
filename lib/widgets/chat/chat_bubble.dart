@@ -7,6 +7,7 @@ class ChatBubble extends StatelessWidget {
   final VoidCallback? onReplay;
   final VoidCallback? onStopTts;
   final VoidCallback? onRetry;
+  final VoidCallback? onCopy;
 
   const ChatBubble({
     super.key,
@@ -14,6 +15,7 @@ class ChatBubble extends StatelessWidget {
     this.isActiveStream = false,
     this.onReplay,
     this.onStopTts,
+    this.onCopy,
     this.onRetry,
   });
 
@@ -59,11 +61,16 @@ class ChatBubble extends StatelessWidget {
                   ),
                   IconButton(
                     tooltip: 'Stop Speaking',
-                    icon: const Icon(Icons.volume_off, size: 20),
+                    icon: const Icon(Icons.volume_off, size: 21),
                     onPressed: onStopTts,
                   ),
                   IconButton(
-                    tooltip: 'Retry',
+                    tooltip: 'Copy Chat',
+                    icon: const Icon(Icons.copy, size: 18),
+                    onPressed: onCopy,
+                  ),
+                  IconButton(
+                    tooltip: 'Retry message',
                     icon: const Icon(Icons.refresh, size: 22),
                     onPressed: onRetry,
                   ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:testapp/bindings/chat_binding.dart';
 import 'package:testapp/widgets/chat/action_card.dart';
 
 import 'chat_page.dart';
@@ -75,13 +76,16 @@ class HomePage extends StatelessWidget {
                       title: 'Voice Chatbot Demo',
                       subtitle: 'Talk to the assistant & test voice flow',
                       icon: Icons.mic_none,
-                      onTap: () => Get.to(() => const ChatPage()),
+                      onTap: () => Get.to(
+                        () => const ChatPage(),
+                        binding: ChatBinding(),
+                      ),
                       accentColor: Colors.teal,
                     ),
                     ActionCard(
-                      title: 'Coming Soon !',
-                      subtitle: 'Analytics & usage insights',
-                      icon: Icons.trending_up,
+                      title: 'Connected Devices',
+                      subtitle: 'Control everythin using your phone',
+                      icon: Icons.devices_other_outlined,
                       onTap: () {
                         Get.closeCurrentSnackbar();
                         Get.snackbar(

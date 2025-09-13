@@ -77,10 +77,6 @@ class VoiceLanguageCard extends StatelessWidget {
                           onChanged: (val) {
                             if (val != null) {
                               settings.setTtsLanguage(val);
-                              Get.snackbar(
-                                'Settings',
-                                'TTS language set to $val',
-                              );
                             }
                           },
                         );
@@ -121,10 +117,6 @@ class VoiceLanguageCard extends StatelessWidget {
                           onChanged: (val) {
                             if (val != null) {
                               settings.setSttLanguage(val);
-                              Get.snackbar(
-                                'Settings',
-                                'STT language set to $val',
-                              );
                             }
                           },
                         );

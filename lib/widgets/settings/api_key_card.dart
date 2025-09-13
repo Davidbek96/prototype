@@ -6,23 +6,13 @@ import '../../controllers/settings_controller.dart';
 class ApiKeyCard extends StatelessWidget {
   const ApiKeyCard({super.key});
 
-  // track which route instances we've already cleared for so we only clear once per opening
-  static final Set<int> _clearedRouteIds = <int>{};
-
   @override
   Widget build(BuildContext context) {
     final settings = Get.find<SettingsController>();
     final theme = Theme.of(context);
 
-    // Ensure the API key field is empty when the page is first opened.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final route = ModalRoute.of(context);
-      final id = route?.hashCode ?? 0;
-      if (!_clearedRouteIds.contains(id)) {
-        settings.apiKeyController.clear();
-        _clearedRouteIds.add(id);
-      }
-    });
+    // We no longer auto-clear the controller on first frame.
+    // The controller starts empty (privacy). The stored key remains in storage.
 
     return Card(
       elevation: 2,
@@ -82,7 +72,6 @@ class ApiKeyCard extends StatelessWidget {
 
         const Spacer(),
 
-        // Submenu (three dots) with Copy and Delete actions to avoid accidental taps.
         PopupMenuButton<_MenuAction>(
           tooltip: 'More',
           icon: const Icon(Icons.more_vert),
@@ -170,6 +159,7 @@ class ApiKeyCard extends StatelessWidget {
   }
 
   void _copyApiKey(BuildContext context, SettingsController settings) {
+    // Favor visible input when present, otherwise fall back to stored key.
     final text = settings.apiKeyController.text.trim().isNotEmpty
         ? settings.apiKeyController.text.trim()
         : (settings.storedApiKey ?? '');

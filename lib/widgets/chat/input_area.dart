@@ -72,10 +72,6 @@ class _InputAreaState extends State<InputArea> {
           children: [
             Expanded(
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 8,
-                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   border: Border.all(
@@ -87,20 +83,28 @@ class _InputAreaState extends State<InputArea> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Expanded(
-                      child: TextField(
-                        controller: widget.controller,
-                        minLines: 1,
-                        maxLines: 5,
-                        onChanged: (_) => setState(() {}),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.black87,
+                      child: Padding(
+                        padding: const EdgeInsets.only(
+                          right: 4,
+                          left: 10,
+                          top: 10,
+                          bottom: 10,
                         ),
-                        decoration: InputDecoration(
-                          hintText: "Message",
-                          hintStyle: TextStyle(color: Colors.grey.shade500),
-                          border: InputBorder.none,
-                          isDense: true,
+                        child: TextField(
+                          controller: widget.controller,
+                          minLines: 1,
+                          maxLines: 5,
+                          onChanged: (_) => setState(() {}),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.black87,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: "Message",
+                            hintStyle: TextStyle(color: Colors.grey.shade500),
+                            border: InputBorder.none,
+                            isDense: true,
+                          ),
                         ),
                       ),
                     ),
@@ -108,8 +112,11 @@ class _InputAreaState extends State<InputArea> {
                       InkWell(
                         onTap: widget.onSend,
                         child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 4.0),
-                          child: Icon(Icons.send, color: Colors.blue),
+                          padding: EdgeInsets.symmetric(
+                            vertical: 15.0,
+                            horizontal: 6,
+                          ),
+                          child: Icon(Icons.send, size: 22, color: Colors.blue),
                         ),
                       ),
                   ],

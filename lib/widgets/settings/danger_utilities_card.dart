@@ -22,7 +22,9 @@ class DangerUtilitiesCard extends StatelessWidget {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: theme.colorScheme.primary.withOpacity(0.12),
+                  backgroundColor: theme.colorScheme.primary.withValues(
+                    alpha: 0.12,
+                  ),
                   child: Icon(
                     Icons.build_circle_outlined,
                     color: theme.colorScheme.primary,
@@ -102,7 +104,7 @@ class DangerUtilitiesCard extends StatelessWidget {
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.redAccent,
                       side: BorderSide(
-                        color: Colors.redAccent.withOpacity(0.12),
+                        color: Colors.redAccent.withValues(alpha: 0.12),
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
