@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'models/chat_model.dart';
+import 'chat_model.dart';
 
 /// stream controller is closed and cleans up timers/subscriptions on cancel.
 class GeminiChatModel implements ChatModel {

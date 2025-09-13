@@ -258,6 +258,7 @@ class _MicOnButtonState extends State<MicOnButton>
         if (!await _requestPermissionIfNeeded()) {
           return; // dialog already shown
         }
+        Get.closeAllSnackbars();
         Get.snackbar(
           "Hold Microphone!",
           'Please keep holding microphone to talk',

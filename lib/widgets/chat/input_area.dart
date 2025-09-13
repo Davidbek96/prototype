@@ -55,8 +55,6 @@ class _InputAreaState extends State<InputArea> {
 
   @override
   Widget build(BuildContext context) {
-    bool hasText = widget.controller.text.trim().isNotEmpty;
-
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
@@ -108,7 +106,7 @@ class _InputAreaState extends State<InputArea> {
                         ),
                       ),
                     ),
-                    if (hasText)
+                    if (widget.controller.text.trim().isNotEmpty)
                       InkWell(
                         onTap: widget.onSend,
                         child: const Padding(

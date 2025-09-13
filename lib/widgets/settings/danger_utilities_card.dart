@@ -10,114 +10,93 @@ class DangerUtilitiesCard extends StatelessWidget {
     final settings = Get.find<SettingsController>();
     final theme = Theme.of(context);
 
-    return Card(
-      elevation: 2,
-      color: theme.colorScheme.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    Widget sectionTitle(String title) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      child: Text(
+        title,
+        style: theme.textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        sectionTitle('Danger & Utilities'),
+        Card(
+          elevation: 1.5,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
               children: [
-                CircleAvatar(
-                  backgroundColor: theme.colorScheme.primary.withValues(
-                    alpha: 0.12,
-                  ),
-                  child: Icon(
-                    Icons.build_circle_outlined,
-                    color: theme.colorScheme.primary,
+                // Storage info
+                const ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.info_outline),
+                  title: Text('Storage'),
+                  subtitle: Text(
+                    'API key and settings are stored locally on this device only.',
                   ),
                 ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+
+                const Divider(),
+
+                // Defaults info
+                Row(
                   children: [
-                    Text(
-                      'Danger & Utilities',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
+                    Icon(Icons.restart_alt, color: theme.colorScheme.primary),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Defaults', style: theme.textTheme.bodyLarge),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Language and auto-play defaults are: '
+                            'TTS = en-US, STT = en-US, Auto-play TTS = off.',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Storage, reset and preference controls',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.hintColor,
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // Clear preferences button
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () =>
+                            _confirmClearPreferences(context, settings),
+                        icon: const Icon(Icons.delete_forever_outlined),
+                        label: const Text('Clear preferences'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.redAccent,
+                          side: BorderSide(
+                            color: Colors.redAccent.withValues(alpha: 0.12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
               ],
             ),
-
-            const SizedBox(height: 12),
-            const Divider(),
-
-            const ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(Icons.info_outline),
-              title: Text('Storage'),
-              subtitle: Text(
-                'API key and settings are stored locally on this device only.',
-              ),
-            ),
-
-            const Divider(height: 20),
-
-            // Info about defaults (non-interactive)
-            Padding(
-              padding: EdgeInsets.zero,
-              child: Row(
-                children: [
-                  Icon(Icons.restart_alt, color: theme.colorScheme.primary),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Defaults', style: theme.textTheme.bodyLarge),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Language and auto-play defaults are: TTS = en-US, STT = en-US, Auto-play TTS = off.',
-                          style: theme.textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // Single destructive action
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () =>
-                        _confirmClearPreferences(context, settings),
-                    icon: const Icon(Icons.delete_forever_outlined),
-                    label: const Text('Clear preferences'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.redAccent,
-                      side: BorderSide(
-                        color: Colors.redAccent.withValues(alpha: 0.12),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -130,7 +109,8 @@ class DangerUtilitiesCard extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         title: const Text('Clear all stored settings?'),
         content: const Text(
-          'This removes saved language & auto-play preferences. API key will remain unless explicitly cleared.',
+          'This removes saved language & auto-play preferences. '
+          'API key will remain unless explicitly cleared.',
         ),
         actions: [
           TextButton(
@@ -149,6 +129,7 @@ class DangerUtilitiesCard extends StatelessWidget {
       settings.toggleAutoPlayTts(false);
       settings.setTtsLanguage('en-US');
       settings.setSttLanguage('en-US');
+      Get.closeAllSnackbars();
       Get.snackbar('Settings', 'Preferences cleared');
     }
   }

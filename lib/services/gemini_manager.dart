@@ -1,6 +1,6 @@
 // lib/services/gemini_manager.dart
 import 'package:get/get.dart';
-import '../gemini_chat_model.dart';
+import '../models/gemini_chat_model.dart';
 import '../pages/settings_page.dart';
 import '../controllers/settings_controller.dart';
 

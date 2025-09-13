@@ -165,8 +165,8 @@ class ApiKeyCard extends StatelessWidget {
         : (settings.storedApiKey ?? '');
     if (text.isNotEmpty) {
       Clipboard.setData(ClipboardData(text: text));
-      Get.snackbar('Settings', 'API key copied to clipboard');
     } else {
+      Get.closeAllSnackbars();
       Get.snackbar('Settings', 'No API key to copy');
     }
   }
@@ -195,6 +195,7 @@ class ApiKeyCard extends StatelessWidget {
 
     if (confirmed == true) {
       await settings.clearApiKey();
+      Get.closeAllSnackbars();
       Get.snackbar('Settings', 'API key cleared');
     }
   }

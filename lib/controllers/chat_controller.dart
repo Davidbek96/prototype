@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 
 import '../models/chat_model.dart';
 //import '../gemini_chat_model.dart';
@@ -42,6 +43,7 @@ class ChatController extends GetxController {
     this.streamManager = streamManager ?? Get.find<ChatStreamManager>();
     this.transientMsg = transientMsg ?? Get.find<TransientMessageService>();
   }
+  final _box = GetStorage();
 
   final messages = <ChatMessage>[].obs;
   final isStreaming = false.obs;
@@ -56,6 +58,18 @@ class ChatController extends GetxController {
   void onInit() {
     super.onInit();
     messageController = TextEditingController();
+    // Load saved messages on startup
+    final stored = _box.read<List>('messages');
+    if (stored != null) {
+      messages.assignAll(
+        stored.map((m) => ChatMessage.fromJson(Map<String, dynamic>.from(m))),
+      );
+    }
+
+    // Save messages whenever they change
+    ever(messages, (_) {
+      _box.write('messages', messages.map((m) => m.toJson()).toList());
+    });
 
     // wire speech partial + status
     speech.initialize().then((_) {
@@ -107,6 +121,7 @@ class ChatController extends GetxController {
     final havePermission = await permission.ensureMicPermissionOrPrompt();
     if (!havePermission) return;
     if (!await connectivity.hasNetwork()) {
+      Get.closeAllSnackbars();
       Get.snackbar('No internet', 'Please check your connection.');
       return;
     }
@@ -135,6 +150,7 @@ class ChatController extends GetxController {
     stopTtsSafe();
     // connectivity check
     if (!await connectivity.hasNetwork()) {
+      Get.closeAllSnackbars();
       Get.snackbar('No internet', 'Please check your connection.');
       return;
     }

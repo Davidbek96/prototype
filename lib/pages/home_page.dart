@@ -87,7 +87,7 @@ class HomePage extends StatelessWidget {
                       subtitle: 'Control everythin using your phone',
                       icon: Icons.devices_other_outlined,
                       onTap: () {
-                        Get.closeCurrentSnackbar();
+                        Get.closeAllSnackbars();
                         Get.snackbar(
                           'Coming Soon',
                           'You will be able to use this feature soon',
@@ -100,7 +100,7 @@ class HomePage extends StatelessWidget {
                       subtitle: 'Read quickstart and docs',
                       icon: Icons.info_outline,
                       onTap: () {
-                        Get.closeCurrentSnackbar();
+                        Get.closeAllSnackbars();
                         Get.snackbar(
                           'Coming Soon',
                           'You will be able to use this feature soon',

@@ -52,6 +52,7 @@ class SettingsController extends GetxController {
 
   /// Validate API key by calling a lightweight endpoint and then persist.
   Future<void> saveApiKey() async {
+    Get.closeAllSnackbars();
     final candidate = apiKeyController.text.trim();
     if (candidate.isEmpty) {
       // treat empty as "remove stored key" — this is an explicit user intent.

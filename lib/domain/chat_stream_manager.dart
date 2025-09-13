@@ -1,5 +1,5 @@
 import 'dart:async';
-import '../gemini_chat_model.dart';
+import '../models/gemini_chat_model.dart';
 import '../models/chat_model.dart';
 
 typedef ChunkCallback = void Function(ChatChunk chunk);

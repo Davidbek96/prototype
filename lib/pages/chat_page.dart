@@ -51,18 +51,6 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     }
   }
 
-  void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final ChatController ctrl = Get.find<ChatController>();
@@ -117,14 +105,19 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                 return ShowListEmpty();
               }
 
-              // Auto-scroll whenever messages change
-              _scrollToBottom();
-
+              // Use a reversed ListView so the bottom (latest message) is visible on open.
+              // We still present messages in chronological order by reading from the end.
               return ListView.builder(
                 controller: _scrollController,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                reverse: true,
+                padding: EdgeInsets.only(
+                  top: 12,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 12,
+                ),
                 itemCount: msgs.length,
-                itemBuilder: (context, index) {
+                itemBuilder: (context, reverseIndex) {
+                  // Map reversed index to normal chronological index:
+                  final index = msgs.length - 1 - reverseIndex;
                   final msg = msgs[index];
 
                   final isActive =

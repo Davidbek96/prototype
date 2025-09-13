@@ -13,11 +13,12 @@ class TransientMessageService {
   /// - `text`: message text
   /// - `duration`: how long the snackbar should be visible (default 4s)
   void show(String text, {Duration duration = const Duration(seconds: 4)}) {
+    Get.closeAllSnackbars();
     // First: notify via snack bar for immediate feedback
     Get.snackbar(
       'Info',
       text,
-      snackPosition: SnackPosition.BOTTOM,
+      snackPosition: SnackPosition.TOP,
       duration: duration,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     );
