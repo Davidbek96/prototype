@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:testapp/widgets/action_card.dart';
+import 'package:testapp/widgets/chat/action_card.dart';
 
 import 'chat_page.dart';
 import 'webview_page.dart';

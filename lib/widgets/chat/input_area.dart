@@ -1,7 +1,7 @@
 // lib/widgets/input_area.dart
 import 'package:flutter/material.dart';
-import 'package:testapp/widgets/mic_pulse_btn.dart';
-import '../services/speech_service.dart';
+import 'package:testapp/widgets/chat/mic_pulse_btn.dart';
+import '../../services/speech_service.dart';
 
 class InputArea extends StatefulWidget {
   final TextEditingController controller;
