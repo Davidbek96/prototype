@@ -4,13 +4,13 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'controllers/settings_controller.dart';
 import 'pages/home_page.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   await GetStorage.init();
 
-  // Register only truly global controllers (settings is app-wide)
-  // ChatController and chat-related services will be registered when the chat route opens.
   runApp(const MyApp());
 }
 

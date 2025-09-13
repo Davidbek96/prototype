@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:testapp/bindings/chat_binding.dart';
+import 'package:testapp/pages/help_docs_page.dart';
 import 'package:testapp/widgets/chat/action_card.dart';
 
 import 'chat_page.dart';
@@ -100,11 +101,12 @@ class HomePage extends StatelessWidget {
                       subtitle: 'Read quickstart and docs',
                       icon: Icons.info_outline,
                       onTap: () {
-                        Get.closeAllSnackbars();
-                        Get.snackbar(
-                          'Coming Soon',
-                          'You will be able to use this feature soon',
-                        );
+                        Get.to(() => HelpDocsPage());
+                        // Get.closeAllSnackbars();
+                        // Get.snackbar(
+                        //   'Coming Soon',
+                        //   'You will be able to use this feature soon',
+                        // );
                       },
                       accentColor: const Color.fromARGB(255, 21, 166, 228),
                     ),

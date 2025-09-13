@@ -3,11 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class SettingsController extends GetxController {
   final GetStorage _box = GetStorage();
 
-  late TextEditingController apiKeyController;
+  late TextEditingController apiKeyTextEditCtrl;
   final RxBool apiKeyIsSet = false.obs;
   final autoPlayTts = false.obs;
 
@@ -31,17 +32,31 @@ class SettingsController extends GetxController {
   final isSaving = false.obs;
 
   @override
+  @override
   void onInit() {
     super.onInit();
 
-    // For privacy, start the TextField empty. The actual "is set" state is
-    // determined from storage (so clearing the text field does NOT remove the stored value).
-    apiKeyController = TextEditingController(text: '');
+    apiKeyTextEditCtrl = TextEditingController(text: '');
 
-    apiKeyIsSet.value = (_box.read('apiKey') ?? '')
-        .toString()
-        .trim()
-        .isNotEmpty;
+    final stored = (_box.read('apiKey') ?? '').toString().trim();
+    final firstRun = _box.read('firstRun') ?? true;
+
+    if (stored.isNotEmpty) {
+      // User already saved a key before
+      apiKeyIsSet.value = true;
+    } else if (firstRun) {
+      // First install only → fallback to .env
+      final envKey = dotenv.env['GEMINI_API_KEY'] ?? '';
+      if (envKey.isNotEmpty) {
+        _box.write('apiKey', envKey);
+        apiKeyIsSet.value = true;
+      }
+      // Mark app as initialized so we don’t load .env again
+      _box.write('firstRun', false);
+    } else {
+      // No key and not first run
+      apiKeyIsSet.value = false;
+    }
 
     autoPlayTts.value = _box.read('autoPlayTts') ?? false;
     ttsLanguage.value =
@@ -53,9 +68,8 @@ class SettingsController extends GetxController {
   /// Validate API key by calling a lightweight endpoint and then persist.
   Future<void> saveApiKey() async {
     Get.closeAllSnackbars();
-    final candidate = apiKeyController.text.trim();
+    final candidate = apiKeyTextEditCtrl.text.trim();
     if (candidate.isEmpty) {
-      // treat empty as "remove stored key" — this is an explicit user intent.
       await _box.remove('apiKey');
       apiKeyIsSet.value = false;
       Get.snackbar('Settings', 'No API key provided (storage cleared)');
@@ -72,14 +86,10 @@ class SettingsController extends GetxController {
           .timeout(const Duration(seconds: 8));
 
       if (resp.statusCode == 200) {
-        // key is valid — persist it
         await _box.write('apiKey', candidate);
         apiKeyIsSet.value = true;
-
-        // Dismiss keyboard and clear the input for privacy
         FocusManager.instance.primaryFocus?.unfocus();
-        apiKeyController.clear();
-
+        apiKeyTextEditCtrl.clear();
         Get.snackbar('Settings', 'API key saved');
       } else {
         final msg = (resp.statusCode == 401 || resp.statusCode == 403)
@@ -104,41 +114,34 @@ class SettingsController extends GetxController {
     }
   }
 
-  /// Clear API key (with confirm from UI)
   Future<void> clearApiKey() async {
-    // Clear UI and storage explicitly when user confirms deletion
-    apiKeyController.clear();
+    apiKeyTextEditCtrl.clear();
     await _box.remove('apiKey');
     apiKeyIsSet.value = false;
   }
 
-  /// Toggle auto-play TTS setting
   void toggleAutoPlayTts(bool value) {
     autoPlayTts.value = value;
     _box.write('autoPlayTts', value);
   }
 
-  /// Set TTS language and persist
   void setTtsLanguage(String code) {
     ttsLanguage.value = code;
     _box.write('ttsLanguage', code);
   }
 
-  /// Set STT language and persist
   void setSttLanguage(String code) {
     sttLanguage.value = code;
     _box.write('sttLanguage', code);
   }
 
-  /// Toggle visibility of API key input
   void toggleShowApiKey() => showApiKey.value = !showApiKey.value;
 
-  /// Convenience: return stored API key (if any)
   String? get storedApiKey => _box.read('apiKey');
 
   @override
   void onClose() {
-    apiKeyController.dispose();
+    apiKeyTextEditCtrl.dispose();
     super.onClose();
   }
 }

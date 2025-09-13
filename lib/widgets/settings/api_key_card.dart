@@ -115,10 +115,10 @@ class ApiKeyCard extends StatelessWidget {
   Widget _buildApiKeyField(SettingsController settings) {
     return Obx(
       () => TextField(
-        controller: settings.apiKeyController,
+        controller: settings.apiKeyTextEditCtrl,
         obscureText: !settings.showApiKey.value,
         decoration: InputDecoration(
-          hintText: 'Enter Gemini API key',
+          hintText: 'Register a new API key',
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
           suffixIcon: Row(
             mainAxisSize: MainAxisSize.min,
@@ -160,8 +160,8 @@ class ApiKeyCard extends StatelessWidget {
 
   void _copyApiKey(BuildContext context, SettingsController settings) {
     // Favor visible input when present, otherwise fall back to stored key.
-    final text = settings.apiKeyController.text.trim().isNotEmpty
-        ? settings.apiKeyController.text.trim()
+    final text = settings.apiKeyTextEditCtrl.text.trim().isNotEmpty
+        ? settings.apiKeyTextEditCtrl.text.trim()
         : (settings.storedApiKey ?? '');
     if (text.isNotEmpty) {
       Clipboard.setData(ClipboardData(text: text));
