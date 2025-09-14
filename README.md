@@ -56,54 +56,55 @@ _WebView ↔ 네이티브 통신과 Gemini 기반 AI 음성 챗봇을 결합한 
 <!-- Commented, readable version (good for README explanations) -->
 ```
 lib
-├── features                        // Feature-based modular architecture
-│   ├── chat                        // 💬 Chat module (AI chatbot core)
-│   │   ├── domain                  // Business logic (independent of UI)
-│   │   │   └── chat_stream_manager.dart   // Manages streaming chat responses
-│   │   ├── models                  // Data models & adapters
-│   │   │   ├── chat_model.dart          // Base chat model interface
-│   │   │   ├── gemini_adapter.dart      // Adapter to connect with Gemini API
-│   │   │   └── gemini_manager.dart      // Manager for Gemini sessions
-│   │   ├── services                // External integrations & utilities
-│   │   │   ├── stt_service.dart         // Speech-to-Text service (voice input)
-│   │   │   ├── transient_message_service.dart // Handles temporary chat messages
-│   │   │   └── tts_service.dart         // Text-to-Speech service (voice output)
-│   │   ├── widgets                 // UI components for chat
-│   │   │   ├── action_card.dart         // Card with actions (buttons/shortcuts)
-│   │   │   ├── chat_bubble.dart         // UI for chat messages
-│   │   │   ├── input_area.dart          // Chat input field (text + mic)
-│   │   │   ├── mic_pulse_btn.dart       // Animated mic button for voice input
-│   │   │   └── show_list_empty.dart     // Empty state widget (no chats)
-│   │   ├── chat_binding.dart        // GetX binding (dependency injection)
-│   │   ├── chat_controller.dart     // GetX controller (state management)
-│   │   └── chat_page.dart           // Main chat screen UI
+├── features                                   // 기능 기반 모듈 아키텍처
+│   ├── chat                                   // 💬 채팅 모듈 (AI 챗봇 핵심)
+│   │   ├── domain                             // 비즈니스 로직 (UI와 독립적)
+│   │   │   └── chat_stream_manager.dart       // 스트리밍 채팅 응답 관리
+│   │   ├── models                             // 데이터 모델 & 어댑터
+│   │   │   ├── chat_model.dart                // 기본 채팅 모델 인터페이스
+│   │   │   ├── gemini_adapter.dart            // Gemini API 연동 어댑터
+│   │   │   └── gemini_manager.dart            // Gemini 세션 매니저
+│   │   ├── services                           // 외부 연동 & 유틸리티
+│   │   │   ├── stt_service.dart               // 음성 입력 (Speech-to-Text) 서비스
+│   │   │   ├── transient_message_service.dart // 임시 메시지 처리 서비스
+│   │   │   └── tts_service.dart               // 음성 출력 (Text-to-Speech) 서비스
+│   │   ├── widgets                            // 채팅 UI 컴포넌트
+│   │   │   ├── action_card.dart               // 액션 카드 (버튼/단축키)
+│   │   │   ├── chat_bubble.dart               // 채팅 말풍선 UI
+│   │   │   ├── input_area.dart                // 입력 영역 (텍스트 + 마이크)
+│   │   │   ├── mic_pulse_btn.dart             // 음성 입력용 애니메이션 마이크 버튼
+│   │   │   └── show_list_empty.dart           // 채팅 없음 상태 위젯
+│   │   ├── chat_binding.dart                  // GetX 바인딩 (의존성 주입)
+│   │   ├── chat_controller.dart               // GetX 컨트롤러 (상태 관리)
+│   │   └── chat_page.dart                     // 메인 채팅 화면 UI
 │   │
-│   ├── help_docs                    // 📖 Help & documentation module
-│   │   └── help_docs_page.dart          // In-app help & docs screen
+│   ├── help_docs                              // 📖 도움말 & 문서 모듈
+│   │   └── help_docs_page.dart                // 앱 내 도움말 & 문서 화면
 │   │
-│   ├── home                         // 🏠 Home module
-│   │   └── home_page.dart               // App entry/home page
+│   ├── home                                   // 🏠 홈 모듈
+│   │   └── home_page.dart                     // 앱 시작/홈 화면
 │   │
-│   ├── settings                     // ⚙️ Settings module
-│   │   ├── widgets                  // UI widgets for settings
-│   │   │   ├── api_key_card.dart        // API key input card
-│   │   │   ├── danger_utilities_card.dart // Utilities (reset, clear storage)
-│   │   │   ├── voice_language_card.dart  // Language & voice options
-│   │   │   └── settings_controller.dart // GetX controller for settings
-│   │   └── settings_page.dart           // Settings screen UI
+│   ├── settings                               // ⚙️ 설정 모듈
+│   │   ├── widgets                            // 설정 화면 위젯
+│   │   │   ├── api_key_card.dart              // API 키 입력 카드
+│   │   │   ├── danger_utilities_card.dart     // 유틸리티 (리셋, 저장소 초기화)
+│   │   │   ├── voice_language_card.dart       // 음성/언어 옵션
+│   │   │   └── settings_controller.dart       // 설정 화면용 GetX 컨트롤러
+│   │   └── settings_page.dart                 // 설정 화면 UI
 │   │
-│   └── webview                      // 🌐 WebView integration module
-│       ├── bridge                   // Web ↔ Native bridge layer
-│       │   ├── bridge_controller.dart    // Handles WebView <-> Native messages
-│       │   └── messages_model.dart       // Data model for WebView messages
-│       └── webview_page.dart             // WebView screen UI
+│   └── webview                                // 🌐 웹뷰 통합 모듈
+│       ├── bridge                             // 웹 ↔ 네이티브 브리지 계층
+│       │   ├── bridge_controller.dart         // WebView ↔ 네이티브 메시지 처리
+│       │   └── messages_model.dart            // WebView 메시지 데이터 모델
+│       └── webview_page.dart                  // 웹뷰 화면 UI
 │
-├── shared                           // Shared resources across features
-│   ├── services                     // Common/global services
-│   └── translations                 // i18n translations
+├── shared                                     // 공용 리소스 (여러 기능에서 공유)
+│   ├── services                               // 공통/글로벌 서비스
+│   └── translations                           // 다국어(i18n) 번역
 │
-├── app.dart                         // Root app configuration (routes, themes)
-└── main.dart                        // App entry point (main function)
+├── app.dart                                   // 루트 앱 설정 (라우트, 테마 등)
+└── main.dart                                  // 앱 진입점 (main 함수)
+
 
 ```
 
@@ -161,6 +162,59 @@ This document explains the main features, setup, troubleshooting, and technical 
 - **permission_handler** → Permissions  
 
 ---
+<!-- Commented, readable version (good for README explanations) -->
+```
+lib
+├── features                                   // Feature-based modular architecture
+│   ├── chat                                   // 💬 Chat module (AI chatbot core)
+│   │   ├── domain                             // Business logic (independent of UI)
+│   │   │   └── chat_stream_manager.dart       // Manages streaming chat responses
+│   │   ├── models                             // Data models & adapters
+│   │   │   ├── chat_model.dart                // Base chat model interface
+│   │   │   ├── gemini_adapter.dart            // Adapter to connect with Gemini API
+│   │   │   └── gemini_manager.dart            // Manager for Gemini sessions
+│   │   ├── services                           // External integrations & utilities
+│   │   │   ├── stt_service.dart               // Speech-to-Text service (voice input)
+│   │   │   ├── transient_message_service.dart // Handles temporary chat messages
+│   │   │   └── tts_service.dart               // Text-to-Speech service (voice output)
+│   │   ├── widgets                            // UI components for chat
+│   │   │   ├── action_card.dart               // Card with actions (buttons/shortcuts)
+│   │   │   ├── chat_bubble.dart               // UI for chat messages
+│   │   │   ├── input_area.dart                // Chat input field (text + mic)
+│   │   │   ├── mic_pulse_btn.dart             // Animated mic button for voice input
+│   │   │   └── show_list_empty.dart           // Empty state widget (no chats)
+│   │   ├── chat_binding.dart                  // GetX binding (dependency injection)
+│   │   ├── chat_controller.dart               // GetX controller (state management)
+│   │   └── chat_page.dart                     // Main chat screen UI
+│   │
+│   ├── help_docs                              // 📖 Help & documentation module
+│   │   └── help_docs_page.dart                // In-app help & docs screen
+│   │
+│   ├── home                                   // 🏠 Home module
+│   │   └── home_page.dart                     // App entry/home page
+│   │
+│   ├── settings                               // ⚙️ Settings module
+│   │   ├── widgets                            // UI widgets for settings
+│   │   │   ├── api_key_card.dart              // API key input card
+│   │   │   ├── danger_utilities_card.dart     // Utilities (reset, clear storage)
+│   │   │   ├── voice_language_card.dart       // Language & voice options
+│   │   │   └── settings_controller.dart       // GetX controller for settings
+│   │   └── settings_page.dart                 // Settings screen UI
+│   │
+│   └── webview                                // 🌐 WebView integration module
+│       ├── bridge                             // Web ↔ Native bridge layer
+│       │   ├── bridge_controller.dart         // Handles WebView <-> Native messages
+│       │   └── messages_model.dart            // Data model for WebView messages
+│       └── webview_page.dart                  // WebView screen UI
+│
+├── shared                                     // Shared resources across features
+│   ├── services                               // Common/global services
+│   └── translations                           // i18n translations
+│
+├── app.dart                                   // Root app configuration (routes, themes)
+└── main.dart                                  // App entry point (main function)
+
+```
 
 ### 🙏 Closing
 Thank you for using **Webview & Chatbot Prototype**!  
