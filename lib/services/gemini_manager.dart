@@ -1,4 +1,3 @@
-// lib/services/gemini_manager.dart
 import 'package:get/get.dart';
 import '../models/gemini_chat_model.dart';
 import '../pages/settings_page.dart';
@@ -18,9 +17,9 @@ class GeminiManager {
     final stored = settings.storedApiKey?.toString().trim() ?? '';
     if (stored.isEmpty) {
       Get.defaultDialog(
-        title: 'Missing API Key',
-        middleText: 'Please set your Gemini API key in Settings.',
-        textConfirm: 'Open Settings',
+        title: 'missing_api_key'.tr,
+        middleText: 'please_set_api_key'.tr,
+        textConfirm: 'open_settings'.tr,
         onConfirm: () {
           Get.back();
           Get.to(() => const SettingsPage());

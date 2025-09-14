@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/settings_controller.dart';
+import '../../controllers/chat_controller.dart';
 
 class DangerUtilitiesCard extends StatelessWidget {
   const DangerUtilitiesCard({super.key});
@@ -13,7 +14,7 @@ class DangerUtilitiesCard extends StatelessWidget {
     Widget sectionTitle(String title) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 12.0),
       child: Text(
-        title,
+        title.tr,
         style: theme.textTheme.titleMedium?.copyWith(
           fontWeight: FontWeight.w600,
         ),
@@ -23,7 +24,7 @@ class DangerUtilitiesCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sectionTitle('Danger & Utilities'),
+        sectionTitle('danger_utilities'.tr),
         Card(
           elevation: 1.5,
           shape: RoundedRectangleBorder(
@@ -34,13 +35,11 @@ class DangerUtilitiesCard extends StatelessWidget {
             child: Column(
               children: [
                 // Storage info
-                const ListTile(
+                ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.info_outline),
-                  title: Text('Storage'),
-                  subtitle: Text(
-                    'API key and settings are stored locally on this device only.',
-                  ),
+                  leading: const Icon(Icons.info_outline),
+                  title: Text('storage'.tr),
+                  subtitle: Text('storage_info'.tr),
                 ),
 
                 const Divider(),
@@ -54,11 +53,10 @@ class DangerUtilitiesCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Defaults', style: theme.textTheme.bodyLarge),
+                          Text('defaults'.tr, style: theme.textTheme.bodyLarge),
                           const SizedBox(height: 4),
                           Text(
-                            'Language and auto-play defaults are: '
-                            'TTS = en-US, STT = en-US, Auto-play TTS = off.',
+                            'defaults_info'.tr,
                             style: theme.textTheme.bodySmall,
                           ),
                         ],
@@ -69,19 +67,37 @@ class DangerUtilitiesCard extends StatelessWidget {
 
                 const SizedBox(height: 12),
 
-                // Clear preferences button
+                // Clear preferences + Clear messages buttons (side-by-side)
                 Row(
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () =>
                             _confirmClearPreferences(context, settings),
-                        icon: const Icon(Icons.delete_forever_outlined),
-                        label: const Text('Clear preferences'),
+                        icon: const Icon(Icons.settings_backup_restore),
+                        label: Text('clear_preferences'.tr),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.redAccent,
+                          foregroundColor: theme.colorScheme.error,
                           side: BorderSide(
-                            color: Colors.redAccent.withValues(alpha: 0.12),
+                            color: theme.colorScheme.error.withAlpha(30),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _confirmClearMessages(context),
+                        icon: const Icon(Icons.delete_sweep_outlined),
+                        label: Text('clear_messages'.tr),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: theme.colorScheme.error,
+                          side: BorderSide(
+                            color: theme.colorScheme.error.withAlpha(30),
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
@@ -107,19 +123,16 @@ class DangerUtilitiesCard extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Clear all stored settings?'),
-        content: const Text(
-          'This removes saved language & auto-play preferences. '
-          'API key will remain unless explicitly cleared.',
-        ),
+        title: Text('clear_all_settings_title'.tr),
+        content: Text('clear_all_settings_content'.tr),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text('cancel'.tr),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Clear', style: TextStyle(color: Colors.red)),
+            child: Text('clear'.tr, style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -130,7 +143,40 @@ class DangerUtilitiesCard extends StatelessWidget {
       settings.setTtsLanguage('en-US');
       settings.setSttLanguage('en-US');
       Get.closeAllSnackbars();
-      Get.snackbar('Settings', 'Preferences cleared');
+      Get.snackbar('settings'.tr, 'preferences_cleared'.tr);
+    }
+  }
+
+  Future<void> _confirmClearMessages(BuildContext context) async {
+    final chatCtrl = Get.find<ChatController>();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('clear_messages_title'.tr),
+        content: Text('clear_messages_content'.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('clear'.tr, style: const TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await chatCtrl.clearMessages();
+        Get.closeAllSnackbars();
+        Get.snackbar('messages'.tr, 'messages_cleared'.tr);
+      } catch (e) {
+        Get.closeAllSnackbars();
+        Get.snackbar('error'.tr, 'failed_to_clear_messages'.tr);
+      }
     }
   }
 }

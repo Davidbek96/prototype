@@ -122,7 +122,7 @@ class ChatController extends GetxController {
     if (!havePermission) return;
     if (!await connectivity.hasNetwork()) {
       Get.closeAllSnackbars();
-      Get.snackbar('No internet', 'Please check your connection.');
+      Get.snackbar('no_internet'.tr, 'check_connection'.tr);
       return;
     }
 
@@ -151,7 +151,7 @@ class ChatController extends GetxController {
     // connectivity check
     if (!await connectivity.hasNetwork()) {
       Get.closeAllSnackbars();
-      Get.snackbar('No internet', 'Please check your connection.');
+      Get.snackbar('no_internet'.tr, 'check_connection'.tr);
       return;
     }
 
@@ -177,9 +177,6 @@ class ChatController extends GetxController {
   }
 
   /// Retry an earlier user message by index.
-  /// This mirrors the original behavior: cancels any current stream,
-  /// removes messages after the user message, inserts a model placeholder,
-  /// and restarts streaming using the history up to the user message.
   void retryMessage(int userIndex) {
     //if tts working stop
     stopTtsSafe();
@@ -190,32 +187,58 @@ class ChatController extends GetxController {
 
     final gemini = geminiManager.currentOrPromptSettings();
     if (gemini == null) {
-      // user prompted to settings (or cancelled)
       return;
     }
 
-    // Cancel any existing stream (via streamManager)
     try {
       streamManager.stop();
     } catch (_) {}
 
-    // Remove all messages after the user message
     if (userIndex + 1 < messages.length) {
       messages.removeRange(userIndex + 1, messages.length);
     }
 
-    // Insert model placeholder and update state
     messages.insert(userIndex + 1, ChatMessage(role: 'model', content: '...'));
     final modelIndex = userIndex + 1;
     activeModelIndex.value = modelIndex;
     isStreaming.value = true;
     tokenCount.value = 0;
 
-    // Build history up to user message (inclusive)
     final history = messages.sublist(0, userIndex + 1);
 
-    // Start streaming again
     streamManager.startStream(gemini, history);
+  }
+
+  /// Clears all chat messages and resets related state.
+  ///
+  /// Safe: stops streaming and TTS if running, clears the in-memory messages list,
+  /// clears saved messages from GetStorage, resets counters and active indexes,
+  /// and clears the input controller.
+  Future<void> clearMessages() async {
+    // stop any ongoing TTS & streaming activity
+    stopTtsSafe();
+    try {
+      streamManager.stop();
+    } catch (_) {}
+
+    // Reset any transient audio/listening state
+    try {
+      await speech.stopListening();
+    } catch (_) {}
+    isListening.value = false;
+    isStreaming.value = false;
+    activeModelIndex.value = -1;
+    tokenCount.value = 0;
+
+    // Clear input and messages
+    messageController.clear();
+    messages.clear();
+
+    // Remove persisted messages from storage (ever(messages) handler will write when messages changes,
+    // removing the key ensures no stale history remains)
+    try {
+      await _box.remove('messages');
+    } catch (_) {}
   }
 
   void _onChunk(ChatChunk chunk) {
@@ -240,16 +263,18 @@ class ChatController extends GetxController {
 
     final meta = chunk.meta ?? {};
     if (meta['event'] == 'retry') {
-      transientMsg.show('Retrying: ${meta['reason'] ?? ''}');
+      transientMsg.show(
+        'retrying_reason'.trParams({'reason': meta['reason'] ?? ''}),
+      );
     }
     if (meta['event'] == 'gap_retry') {
-      transientMsg.show('Connection gap — retrying');
+      transientMsg.show('gap_retrying'.tr);
     }
 
     if (meta['error'] != null) {
       messages[modelIndex] = ChatMessage(
         role: 'model',
-        content: '⚠️ Error: ${meta['error']}',
+        content: '⚠️ ${'error'.tr}: ${meta['error']}',
       );
       stopStreaming();
     }
@@ -271,7 +296,7 @@ class ChatController extends GetxController {
   void _onStreamError(Object e) {
     isStreaming.value = false;
     activeModelIndex.value = -1;
-    transientMsg.show('Stream error: $e');
+    transientMsg.show('stream_error'.trParams({'error': e.toString()}));
   }
 
   void stopStreaming() {

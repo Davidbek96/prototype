@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
 
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>JOI WebView Demo</title>
+    <title>JOI WebView 데모</title>
     <style>
         :root {
             --primary: #4f83cc;
@@ -126,7 +126,6 @@
             gap: 6px;
             font-size: 0.95rem;
             flex-wrap: wrap;
-            /* allows long messages to wrap nicely */
         }
 
         .log-controls {
@@ -181,50 +180,45 @@
 </head>
 
 <body>
-    <h2>WebView ↔ Native Hook</h2>
+    <h2>웹뷰 ↔ 네이티브 연결</h2>
 
     <div class="card">
         <div class="actions">
-            <button class="action-btn primary" onclick="sendAction('vibrate')">🔔 Vibrate</button>
-            <button class="action-btn secondary" onclick="sendAction('getDeviceInfo')">📱 Device Info</button>
+            <button class="action-btn primary" onclick="sendAction('vibrate')">🔔 진동</button>
+            <button class="action-btn secondary" onclick="sendAction('getDeviceInfo')">📱 기기 정보</button>
             <button class="action-btn warning" onclick="sendAction('copyToClipboard', {text: 'Hello from WebView'})">📋
-                Copy Text</button>
-            <button class="action-btn info" onclick="sendAction('pickImage')">🖼️ Pick Image</button>
+                텍스트 복사</button>
+            <button class="action-btn info" onclick="sendAction('pickImage')">🖼️ 이미지 선택</button>
         </div>
 
         <div class="status-rows">
             <div class="status-row">
-                <strong>Timer:</strong> <span id="tick">0</span>
+                <strong>타이머:</strong> <span id="tick">0</span>
             </div>
             <div class="status-row">
-                <strong>Battery:</strong> <span id="battery">unknown</span>
+                <strong>배터리:</strong> <span id="battery">알 수 없음</span>
             </div>
             <div class="status-row">
-                <strong>Network:</strong> <span id="network">unknown</span>
+                <strong>네트워크:</strong> <span id="network">알 수 없음</span>
             </div>
         </div>
     </div>
 
     <div class="card">
         <div class="log-controls">
-            <h3>Log</h3>
-            <button class="log-btn" onclick="toggleTickLogs()" id="tickLogBtn">Show Tick Logs</button>
-            <button class="log-btn" onclick="clearLog()" id="clearLogBtn">Clear Log</button>
+            <h3>로그</h3>
+            <button class="log-btn" onclick="toggleTickLogs()" id="tickLogBtn">틱 로그 표시</button>
+            <button class="log-btn" onclick="clearLog()" id="clearLogBtn">로그 지우기</button>
         </div>
         <pre id="log"></pre>
     </div>
 
     <script>
-        // ---------------- CONFIG ----------------
-        const REQUEST_TIMEOUT_MS = 10000; // 10s timeout per spec
-        // ----------------------------------------
+        const REQUEST_TIMEOUT_MS = 10000;
 
         let showTickLogs = false;
-
-        // Map of requestId -> { timer, action, startedAt }
         const pendingRequests = {};
 
-        // Prefer crypto.randomUUID() if available
         function uuid() {
             if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
@@ -234,46 +228,42 @@
             });
         }
 
-        // Logging utilities (reuse existing #log element)
         function log(msg) {
             try {
                 const pre = document.getElementById('log');
                 pre.textContent += "\n" + `[${new Date().toLocaleTimeString()}] ${msg}`;
                 pre.scrollTop = pre.scrollHeight;
             } catch (e) {
-                /* silent fallback */
-                console.log('log error', e);
+                console.log('로그 오류', e);
             }
         }
 
         function clearLog() {
             try {
                 document.getElementById('log').textContent = "";
-            } catch (e) { /* ignore */ }
+            } catch (e) { }
         }
 
         function toggleTickLogs() {
             showTickLogs = !showTickLogs;
             try {
                 document.getElementById('tickLogBtn').innerText =
-                    showTickLogs ? "Hide Tick Logs" : "Show Tick Logs";
-            } catch (e) { /* ignore */ }
+                    showTickLogs ? "틱 로그 숨기기" : "틱 로그 표시";
+            } catch (e) { }
         }
 
-        // Keep a minimal request visible trace in the log (no DOM changes)
         function markRequestPending(requestId, action) {
-            log(`[JS→Native] request ${requestId} action=${action} (pending)`);
+            log(`[JS→네이티브] 요청 ${requestId} 동작=${action} (대기 중)`);
         }
 
         function markRequestSuccess(requestId, action) {
-            log(`[JS] request ${requestId} action=${action} succeeded`);
+            log(`[JS] 요청 ${requestId} 동작=${action} 성공`);
         }
 
         function markRequestError(requestId, action, code, message) {
-            log(`[JS] request ${requestId} action=${action} error=${code} message=${message}`);
+            log(`[JS] 요청 ${requestId} 동작=${action} 오류=${code} 메시지=${message}`);
         }
 
-        // sendAction: builds message, registers timeout, sends to native via JOI.postMessage
         function sendAction(action, payload = {}) {
             const requestId = uuid();
             const message = {
@@ -284,97 +274,81 @@
             };
 
             try {
-                // mark pending
                 markRequestPending(requestId, action);
 
-                // start timeout
                 const timer = setTimeout(() => {
-                    // Timeout handler: E_TIMEOUT
                     if (pendingRequests[requestId]) {
-                        markRequestError(requestId, action, 'E_TIMEOUT', 'No response within 10s');
-                        // clean up
+                        markRequestError(requestId, action, 'E_TIMEOUT', '10초 안에 응답 없음');
                         delete pendingRequests[requestId];
                     }
                 }, REQUEST_TIMEOUT_MS);
 
-                // store pending
                 pendingRequests[requestId] = {
                     timer,
                     action,
                     startedAt: Date.now()
                 };
 
-                // Send message to native
                 if (window.JOI && typeof window.JOI.postMessage === 'function') {
                     window.JOI.postMessage(JSON.stringify(message));
-                    // Also log the exact message string
-                    log('[JS→Native] ' + JSON.stringify(message));
+                    log('[JS→네이티브] ' + JSON.stringify(message));
                 } else {
-                    // No bridge available
                     clearTimeout(timer);
                     delete pendingRequests[requestId];
-                    log('[JS] JOI.postMessage not available — cannot send request');
-                    alert('JOI.postMessage not available');
+                    log('[JS] JOI.postMessage 사용 불가 — 요청을 보낼 수 없음');
+                    alert('JOI.postMessage를 사용할 수 없습니다');
                 }
             } catch (e) {
-                log('[JS] Failed to send request: ' + e);
+                log('[JS] 요청 전송 실패: ' + e);
             }
         }
 
-        // Clean up pending entry when response/error arrives
         function clearPending(requestId) {
             const pending = pendingRequests[requestId];
             if (!pending) return;
             try {
                 if (pending.timer) clearTimeout(pending.timer);
-            } catch (e) { /* ignore */ }
+            } catch (e) { }
             delete pendingRequests[requestId];
         }
 
-        // Handle response-type messages from native
         function handleResponse(obj) {
             const rid = obj.requestId;
-            const action = obj.action || '(unknown)';
+            const action = obj.action || '(알 수 없음)';
             if (!rid) {
-                log('[Native→JS] response missing requestId: ' + JSON.stringify(obj));
+                log('[네이티브→JS] 응답에 requestId 없음: ' + JSON.stringify(obj));
                 return;
             }
             const pending = pendingRequests[rid];
             if (!pending) {
-                // Late response or unknown id
-                log(`[Native→JS] response for unknown/timed-out request ${rid}: ` + JSON.stringify(obj));
+                log(`[네이티브→JS] 알 수 없는/시간 초과된 요청 ${rid}의 응답: ` + JSON.stringify(obj));
                 return;
             }
-            // clear timeout and mark success
             clearPending(rid);
             markRequestSuccess(rid, action);
 
-            // Log payload and do small UI-safe updates (no new DOM elements)
             try {
-                log(`[Native→JS response] action=${action} requestId=${rid} payload=${JSON.stringify(obj.payload)}`);
+                log(`[네이티브→JS 응답] 동작=${action} 요청ID=${rid} payload=${JSON.stringify(obj.payload)}`);
             } catch (e) {
-                log(`[Native→JS response] action=${action} requestId=${rid} (payload not serializable)`);
+                log(`[네이티브→JS 응답] 동작=${action} 요청ID=${rid} (payload 직렬화 불가)`);
             }
 
-            // Special-case: pickImage — log a compact preview message
             if (action && action.toLowerCase() === 'pickimage' && obj.payload) {
                 const p = obj.payload;
                 if (p.imageData && typeof p.imageData === 'string') {
-                    // data URI: log base64 length (avoid dumping huge data into UI)
                     const size = p.imageData.length;
-                    log(`[pickImage] received data URI (length ${size}) — displayed by native app`);
+                    log(`[pickImage] 데이터 URI 수신 (길이 ${size}) — 네이티브 앱에서 표시됨`);
                 } else if (p.uri && typeof p.uri === 'string') {
-                    log(`[pickImage] image URI: ${p.uri}`);
+                    log(`[pickImage] 이미지 URI: ${p.uri}`);
                 } else {
-                    log('[pickImage] payload missing imageData/uri: ' + JSON.stringify(p));
+                    log('[pickImage] payload에 imageData/uri 없음: ' + JSON.stringify(p));
                 }
             }
         }
 
-        // Handle error-type messages from native
         function handleError(obj) {
             const rid = obj.requestId;
-            const action = obj.action || '(unknown)';
+            const action = obj.action || '(알 수 없음)';
             const err = obj.error || {};
             const code = err.code || 'E_UNKNOWN';
             const message = err.message || JSON.stringify(err);
@@ -383,12 +357,10 @@
                 clearPending(rid);
                 markRequestError(rid, action, code, message);
             } else {
-                // Global/unassociated error
-                log('[Native→JS error] ' + JSON.stringify(obj));
+                log('[네이티브→JS 오류] ' + JSON.stringify(obj));
             }
         }
 
-        // Handle event messages from native (timer, battery, connectivity)
         function handleEvent(obj) {
             const action = obj.action;
             switch ((action || '').toLowerCase()) {
@@ -396,36 +368,33 @@
                     try {
                         document.getElementById('tick').textContent = obj.payload?.tick ?? 0;
                     } catch (e) { }
-                    if (showTickLogs) log('[Native→JS event] ' + JSON.stringify(obj));
+                    if (showTickLogs) log('[네이티브→JS 이벤트] ' + JSON.stringify(obj));
                     break;
                 case 'batterystate':
                     try {
-                        document.getElementById('battery').textContent = obj.payload?.state ?? 'unknown';
+                        document.getElementById('battery').textContent = obj.payload?.state ?? '알 수 없음';
                     } catch (e) { }
-                    log('[Native→JS event] ' + JSON.stringify(obj));
+                    log('[네이티브→JS 이벤트] ' + JSON.stringify(obj));
                     break;
                 case 'connectivity':
                     try {
-                        document.getElementById('network').textContent = obj.payload?.status ?? 'unknown';
+                        document.getElementById('network').textContent = obj.payload?.status ?? '알 수 없음';
                     } catch (e) { }
-                    log('[Native→JS event] ' + JSON.stringify(obj));
+                    log('[네이티브→JS 이벤트] ' + JSON.stringify(obj));
                     break;
                 default:
-                    log('[Native→JS event] ' + JSON.stringify(obj));
+                    log('[네이티브→JS 이벤트] ' + JSON.stringify(obj));
             }
         }
 
-        // Set up window.JOI.onMessage safely (don't overwrite native if already set,
-        // but ensure we parse messages for logging / timeout clearing)
         window.JOI = window.JOI || {};
 
-        // If no onMessage defined, provide one. If defined, wrap it (call native handler then ours)
         if (typeof window.JOI.onMessage !== 'function') {
             window.JOI.onMessage = function (data) {
                 try {
                     const obj = (typeof data === 'string') ? JSON.parse(data) : data;
                     if (!obj || typeof obj !== 'object') {
-                        log('[Native→JS] (invalid json) ' + data);
+                        log('[네이티브→JS] (잘못된 JSON) ' + data);
                         return;
                     }
                     const t = obj.type;
@@ -436,29 +405,23 @@
                     } else if (t === 'error') {
                         handleError(obj);
                     } else {
-                        // unknown type: log raw
-                        log('[Native→JS] ' + JSON.stringify(obj));
+                        log('[네이티브→JS] ' + JSON.stringify(obj));
                     }
                 } catch (e) {
-                    log('[Native→JS] (invalid json) ' + data);
+                    log('[네이티브→JS] (잘못된 JSON) ' + data);
                 }
             };
         } else {
-            // existing handler present — wrap it
             const nativeHandler = window.JOI.onMessage;
             window.JOI.onMessage = function (data) {
-                // call native handler first (so app logic still runs)
                 try {
                     nativeHandler(data);
-                } catch (e) {
-                    // ignore errors in native handler
-                }
+                } catch (e) { }
 
-                // now also process for our pending-request bookkeeping & logs
                 try {
                     const obj = (typeof data === 'string') ? JSON.parse(data) : data;
                     if (!obj || typeof obj !== 'object') {
-                        log('[Native→JS] (invalid json) ' + data);
+                        log('[네이티브→JS] (잘못된 JSON) ' + data);
                         return;
                     }
                     const t = obj.type;
@@ -469,24 +432,18 @@
                     } else if (t === 'error') {
                         handleError(obj);
                     } else {
-                        log('[Native→JS] ' + JSON.stringify(obj));
+                        log('[네이티브→JS] ' + JSON.stringify(obj));
                     }
                 } catch (e) {
-                    log('[Native→JS] (invalid json) ' + data);
+                    log('[네이티브→JS] (잘못된 JSON) ' + data);
                 }
             };
         }
 
-        // expose small helpers for manual debug in console (non-UI)
         window.__JOI_DEBUG = {
             sendAction,
             pendingRequests
         };
-
-        // keep original public functions names working if other code depends on them
-        // (the HTML used sendAction(...) directly via onclick attributes)
-        // sendAction is already global
-
     </script>
 
 </body>

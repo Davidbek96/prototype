@@ -13,18 +13,16 @@ class PermissionService {
       // Show a dialog that returns the user's choice (true = open settings)
       final bool? choose = await Get.dialog<bool>(
         AlertDialog(
-          title: const Text('Microphone required'),
-          content: const Text(
-            'Microphone permission is permanently denied. Open app settings to enable it?',
-          ),
+          title: Text('mic_required'.tr),
+          content: Text('mic_perm_denied'.tr),
           actions: [
             TextButton(
               onPressed: () => Get.back(result: false),
-              child: const Text('Cancel'),
+              child: Text('cancel'.tr),
             ),
             TextButton(
               onPressed: () => Get.back(result: true),
-              child: const Text('Open Settings'),
+              child: Text('open_settings'.tr),
             ),
           ],
         ),

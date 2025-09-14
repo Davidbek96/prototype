@@ -16,7 +16,7 @@ class TransientMessageService {
     Get.closeAllSnackbars();
     // First: notify via snack bar for immediate feedback
     Get.snackbar(
-      'Info',
+      'info'.tr,
       text,
       snackPosition: SnackPosition.TOP,
       duration: duration,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart'; // for .tr
 import '../../models/chat_model.dart';
 
 class ChatBubble extends StatelessWidget {
@@ -40,7 +41,7 @@ class ChatBubble extends StatelessWidget {
           children: [
             Text(
               (message.content.isEmpty || message.content == '...')
-                  ? 'Thinking ...'
+                  ? 'thinking'.tr
                   : message.content,
               style: TextStyle(
                 color: isUser ? Colors.white : Colors.black87,
@@ -55,22 +56,22 @@ class ChatBubble extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
-                    tooltip: 'Replay (TTS)',
+                    tooltip: 'replay_tts'.tr,
                     icon: const Icon(Icons.volume_up, size: 20),
                     onPressed: onReplay,
                   ),
                   IconButton(
-                    tooltip: 'Stop Speaking',
+                    tooltip: 'stop_speaking'.tr,
                     icon: const Icon(Icons.volume_off, size: 21),
                     onPressed: onStopTts,
                   ),
                   IconButton(
-                    tooltip: 'Copy Chat',
+                    tooltip: 'copy_chat'.tr,
                     icon: const Icon(Icons.copy, size: 18),
                     onPressed: onCopy,
                   ),
                   IconButton(
-                    tooltip: 'Retry message',
+                    tooltip: 'retry_message'.tr,
                     icon: const Icon(Icons.refresh, size: 22),
                     onPressed: onRetry,
                   ),

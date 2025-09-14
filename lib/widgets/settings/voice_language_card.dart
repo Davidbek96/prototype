@@ -13,7 +13,7 @@ class VoiceLanguageCard extends StatelessWidget {
     Widget sectionTitle(String title) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 12.0),
       child: Text(
-        title,
+        title.tr,
         style: theme.textTheme.titleMedium?.copyWith(
           fontWeight: FontWeight.w600,
         ),
@@ -23,7 +23,7 @@ class VoiceLanguageCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sectionTitle('Voice & Language'),
+        sectionTitle('voice_language'.tr),
         Card(
           elevation: 1.5,
           shape: RoundedRectangleBorder(
@@ -36,10 +36,8 @@ class VoiceLanguageCard extends StatelessWidget {
                 // Auto-play TTS
                 Obx(() {
                   return SwitchListTile(
-                    title: const Text('Auto-play TTS'),
-                    subtitle: const Text(
-                      'Automatically play model replies aloud',
-                    ),
+                    title: Text('auto_play_tts'.tr),
+                    subtitle: Text('auto_play_tts_subtitle'.tr),
                     value: settings.autoPlayTts.value,
                     onChanged: settings.toggleAutoPlayTts,
                     contentPadding: EdgeInsets.zero,
@@ -52,7 +50,7 @@ class VoiceLanguageCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        'TTS Language',
+                        'tts_language'.tr,
                         style: theme.textTheme.bodyLarge,
                       ),
                     ),
@@ -70,7 +68,7 @@ class VoiceLanguageCard extends StatelessWidget {
                               .map(
                                 (lang) => DropdownMenuItem<String>(
                                   value: lang['code'],
-                                  child: Text(lang['label']!),
+                                  child: Text(lang['label']!.tr),
                                 ),
                               )
                               .toList(),
@@ -92,7 +90,7 @@ class VoiceLanguageCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        'STT Language',
+                        'stt_language'.tr,
                         style: theme.textTheme.bodyLarge,
                       ),
                     ),

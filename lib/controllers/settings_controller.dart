@@ -1,3 +1,4 @@
+// lib/controllers/settings_controller.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -17,14 +18,14 @@ class SettingsController extends GetxController {
   final sttLanguage = 'en-US'.obs;
 
   final List<Map<String, String>> supportedLanguages = [
-    {'code': 'en-US', 'label': 'English (US)'},
-    {'code': 'en-GB', 'label': 'English (UK)'},
-    {'code': 'ko-KR', 'label': 'Korean'},
-    {'code': 'ja-JP', 'label': 'Japanese'},
-    {'code': 'fr-FR', 'label': 'French'},
-    {'code': 'de-DE', 'label': 'German'},
-    {'code': 'es-ES', 'label': 'Spanish'},
-    {'code': 'hi-IN', 'label': 'Hindi'},
+    {'code': 'en-US', 'label': 'lang_english_us'.tr},
+    {'code': 'en-GB', 'label': 'lang_english_uk'.tr},
+    {'code': 'ko-KR', 'label': 'lang_korean'.tr},
+    {'code': 'ja-JP', 'label': 'lang_japanese'.tr},
+    {'code': 'fr-FR', 'label': 'lang_french'.tr},
+    {'code': 'de-DE', 'label': 'lang_german'.tr},
+    {'code': 'es-ES', 'label': 'lang_spanish'.tr},
+    {'code': 'hi-IN', 'label': 'lang_hindi'.tr},
   ];
 
   // UI state
@@ -60,9 +61,9 @@ class SettingsController extends GetxController {
 
     autoPlayTts.value = _box.read('autoPlayTts') ?? false;
     ttsLanguage.value =
-        _box.read('ttsLanguage') ?? (_box.read('language') ?? 'en-US');
+        _box.read('ttsLanguage') ?? (_box.read('language') ?? 'ko-KR');
     sttLanguage.value =
-        _box.read('sttLanguage') ?? (_box.read('language') ?? 'en-US');
+        _box.read('sttLanguage') ?? (_box.read('language') ?? 'ko-KR');
   }
 
   /// Validate API key by calling a lightweight endpoint and then persist.
@@ -70,9 +71,7 @@ class SettingsController extends GetxController {
     Get.closeAllSnackbars();
     final candidate = apiKeyTextEditCtrl.text.trim();
     if (candidate.isEmpty) {
-      await _box.remove('apiKey');
-      apiKeyIsSet.value = false;
-      Get.snackbar('Settings', 'No API key provided (storage cleared)');
+      Get.snackbar('settings_title'.tr, 'settings_no_api_key'.tr);
       return;
     }
 
@@ -90,23 +89,29 @@ class SettingsController extends GetxController {
         apiKeyIsSet.value = true;
         FocusManager.instance.primaryFocus?.unfocus();
         apiKeyTextEditCtrl.clear();
-        Get.snackbar('Settings', 'API key saved');
+        Get.snackbar('settings_title'.tr, 'settings_api_key_saved'.tr);
       } else {
         final msg = (resp.statusCode == 401 || resp.statusCode == 403)
-            ? 'Invalid API key (unauthorized)'
-            : 'Invalid API key (HTTP ${resp.statusCode})';
-        Get.snackbar('Settings', msg, backgroundColor: Colors.red.shade100);
+            ? 'settings_invalid_api_key'.tr
+            : 'settings_invalid_api_key_http'.trParams({
+                'code': resp.statusCode.toString(),
+              });
+        Get.snackbar(
+          'settings_title'.tr,
+          msg,
+          backgroundColor: Colors.red.shade100,
+        );
       }
     } on TimeoutException {
       Get.snackbar(
-        'Settings',
-        'Validation timed out — check network or try again.',
+        'settings_title'.tr,
+        'settings_timeout'.tr,
         backgroundColor: Colors.orange.shade100,
       );
     } catch (e) {
       Get.snackbar(
-        'Settings',
-        'Failed to validate API key: $e',
+        'settings_title'.tr,
+        'settings_failed_validation'.trParams({'error': e.toString()}),
         backgroundColor: Colors.red.shade100,
       );
     } finally {

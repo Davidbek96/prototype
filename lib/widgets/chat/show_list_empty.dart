@@ -1,4 +1,6 @@
+// lib/widgets/show_list_empty.dart
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 class ShowListEmpty extends StatelessWidget {
   const ShowListEmpty({super.key});
@@ -14,7 +16,7 @@ class ShowListEmpty extends StatelessWidget {
             Icon(Icons.smart_toy, size: 92, color: Colors.grey.shade400),
             const SizedBox(height: 18),
             Text(
-              'Ask me anything',
+              'ask_me_anything'.tr,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: Colors.grey.shade800,
                 fontWeight: FontWeight.w600,
@@ -22,7 +24,7 @@ class ShowListEmpty extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Tap the mic or type a question below to start a conversation.',
+              'start_conversation_hint'.tr,
               textAlign: TextAlign.center,
               style: Theme.of(
                 context,

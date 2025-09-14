@@ -11,9 +11,6 @@ class ApiKeyCard extends StatelessWidget {
     final settings = Get.find<SettingsController>();
     final theme = Theme.of(context);
 
-    // We no longer auto-clear the controller on first frame.
-    // The controller starts empty (privacy). The stored key remains in storage.
-
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -27,7 +24,7 @@ class ApiKeyCard extends StatelessWidget {
             _buildApiKeyField(settings),
             const SizedBox(height: 8),
             Text(
-              'Tip: keep your API key secret. Do not share screenshots containing the full key.',
+              'api_key_tip'.tr,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: Colors.grey[600],
               ),
@@ -46,7 +43,7 @@ class ApiKeyCard extends StatelessWidget {
     return Row(
       children: [
         Text(
-          'API Key',
+          'api_key_label'.tr,
           style: theme.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w700,
           ),
@@ -55,7 +52,9 @@ class ApiKeyCard extends StatelessWidget {
         Obx(
           () => Chip(
             label: Text(
-              settings.apiKeyIsSet.value ? 'Registered' : 'Not registered',
+              settings.apiKeyIsSet.value
+                  ? 'api_key_registered'.tr
+                  : 'api_key_not_registered'.tr,
             ),
             backgroundColor: settings.apiKeyIsSet.value
                 ? Colors.green.shade100
@@ -69,11 +68,9 @@ class ApiKeyCard extends StatelessWidget {
             ),
           ),
         ),
-
         const Spacer(),
-
         PopupMenuButton<_MenuAction>(
-          tooltip: 'More',
+          tooltip: 'more'.tr,
           icon: const Icon(Icons.more_vert),
           onSelected: (action) async {
             if (action == _MenuAction.copy) {
@@ -86,22 +83,22 @@ class ApiKeyCard extends StatelessWidget {
             PopupMenuItem<_MenuAction>(
               value: _MenuAction.copy,
               child: Row(
-                children: const [
-                  Icon(Icons.copy_outlined),
-                  SizedBox(width: 8),
-                  Text('Copy API key'),
+                children: [
+                  const Icon(Icons.copy_outlined),
+                  const SizedBox(width: 8),
+                  Text('copy_api_key'.tr),
                 ],
               ),
             ),
             PopupMenuItem<_MenuAction>(
               value: _MenuAction.delete,
               child: Row(
-                children: const [
-                  Icon(Icons.delete_outline, color: Colors.redAccent),
-                  SizedBox(width: 8),
+                children: [
+                  const Icon(Icons.delete_outline, color: Colors.redAccent),
+                  const SizedBox(width: 8),
                   Text(
-                    'Delete API key',
-                    style: TextStyle(color: Colors.redAccent),
+                    'delete_api_key'.tr,
+                    style: const TextStyle(color: Colors.redAccent),
                   ),
                 ],
               ),
@@ -118,14 +115,14 @@ class ApiKeyCard extends StatelessWidget {
         controller: settings.apiKeyTextEditCtrl,
         obscureText: !settings.showApiKey.value,
         decoration: InputDecoration(
-          hintText: 'Register a new API key',
+          hintText: 'api_key_hint'.tr,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
           suffixIcon: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Obx(
                 () => IconButton(
-                  tooltip: settings.showApiKey.value ? 'Hide' : 'Show',
+                  tooltip: settings.showApiKey.value ? 'hide'.tr : 'show'.tr,
                   onPressed: settings.toggleShowApiKey,
                   icon: Icon(
                     settings.showApiKey.value
@@ -146,7 +143,7 @@ class ApiKeyCard extends StatelessWidget {
                   );
                 }
                 return IconButton(
-                  tooltip: 'Save API key',
+                  tooltip: 'save_api_key'.tr,
                   onPressed: settings.saveApiKey,
                   icon: const Icon(Icons.save),
                 );
@@ -159,7 +156,6 @@ class ApiKeyCard extends StatelessWidget {
   }
 
   void _copyApiKey(BuildContext context, SettingsController settings) {
-    // Favor visible input when present, otherwise fall back to stored key.
     final text = settings.apiKeyTextEditCtrl.text.trim().isNotEmpty
         ? settings.apiKeyTextEditCtrl.text.trim()
         : (settings.storedApiKey ?? '');
@@ -167,7 +163,7 @@ class ApiKeyCard extends StatelessWidget {
       Clipboard.setData(ClipboardData(text: text));
     } else {
       Get.closeAllSnackbars();
-      Get.snackbar('Settings', 'No API key to copy');
+      Get.snackbar('settings'.tr, 'no_api_key_to_copy'.tr);
     }
   }
 
@@ -178,16 +174,16 @@ class ApiKeyCard extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Clear API key?'),
-        content: const Text('This will remove the stored API key.'),
+        title: Text('clear_api_key_title'.tr),
+        content: Text('clear_api_key_content'.tr),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text('cancel'.tr),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: Text('delete'.tr, style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -196,7 +192,7 @@ class ApiKeyCard extends StatelessWidget {
     if (confirmed == true) {
       await settings.clearApiKey();
       Get.closeAllSnackbars();
-      Get.snackbar('Settings', 'API key cleared');
+      Get.snackbar('settings'.tr, 'api_key_cleared'.tr);
     }
   }
 }

@@ -70,24 +70,19 @@ class _MicOnButtonState extends State<MicOnButton>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Microphone Permission Required"),
-        content: const Text(
-          "To use voice input, please allow microphone access in your device settings:\n\n"
-          "• Open Settings\n"
-          "• Go to App Permissions\n"
-          "• Enable Microphone access",
-        ),
+        title: Text("mic_permission_title".tr),
+        content: Text("mic_permission_content".tr),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+            child: Text("cancel".tr),
           ),
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
               await openAppSettings();
             },
-            child: const Text("Open Settings"),
+            child: Text("open_settings".tr),
           ),
         ],
       ),
@@ -103,7 +98,6 @@ class _MicOnButtonState extends State<MicOnButton>
 
     if (_hasMicPermission) {
       if (!oldWidget.isActive && widget.isActive) {
-        // ✅ Only show overlay if mic is actually active (not just permission granted)
         _showOverlay();
       } else if (oldWidget.isActive && !widget.isActive) {
         _hideOverlay();
@@ -256,13 +250,10 @@ class _MicOnButtonState extends State<MicOnButton>
     return GestureDetector(
       onTap: () async {
         if (!await _requestPermissionIfNeeded()) {
-          return; // dialog already shown
+          return;
         }
         Get.closeAllSnackbars();
-        Get.snackbar(
-          "Hold Microphone!",
-          'Please keep holding microphone to talk',
-        );
+        Get.snackbar("mic_hold_title".tr, "mic_hold_message".tr);
       },
       onLongPressStart: (details) async {
         if (await _requestPermissionIfNeeded()) {

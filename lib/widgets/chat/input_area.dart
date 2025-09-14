@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:testapp/widgets/chat/mic_pulse_btn.dart';
 import '../../services/speech_service.dart';
+import 'package:get/get.dart';
 
 class InputArea extends StatefulWidget {
   final TextEditingController controller;
@@ -98,7 +99,7 @@ class _InputAreaState extends State<InputArea> {
                             color: Colors.black87,
                           ),
                           decoration: InputDecoration(
-                            hintText: "Message",
+                            hintText: "message".tr,
                             hintStyle: TextStyle(color: Colors.grey.shade500),
                             border: InputBorder.none,
                             isDense: true,

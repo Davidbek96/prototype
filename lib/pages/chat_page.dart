@@ -57,12 +57,12 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Gemini Chatbot"),
+        title: Text("gemini_chatbot".tr),
         actions: [
           Obx(() {
             if (!ctrl.isStreaming.value) {
               return IconButton(
-                tooltip: 'Settings',
+                tooltip: 'settings'.tr,
                 icon: const Icon(Icons.settings),
                 onPressed: () {
                   ctrl.stopTtsSafe(); // stop TTS before navigating
@@ -81,10 +81,10 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                   const SizedBox(width: 8),
-                  Obx(() => Text(" • tokens: ${ctrl.tokenCount.value}")),
+                  Obx(() => Text("• ${"tokens".tr}:${ctrl.tokenCount.value}")),
                   const SizedBox(width: 8),
                   IconButton(
-                    tooltip: 'Stop reply',
+                    tooltip: 'stop_reply'.tr,
                     icon: const Icon(Icons.stop_circle),
                     onPressed: ctrl.stopStreaming,
                   ),

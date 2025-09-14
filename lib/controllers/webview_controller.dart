@@ -92,7 +92,7 @@ class WebViewControllerX extends GetxController {
               action,
               requestId,
               'E_INVALID',
-              'No text to copy',
+              'webview_no_text'.tr,
             );
           } else {
             await Clipboard.setData(ClipboardData(text: text));
@@ -113,7 +113,7 @@ class WebViewControllerX extends GetxController {
                 action,
                 requestId,
                 'E_CANCELLED',
-                'User cancelled',
+                'webview_user_cancelled'.tr,
               );
             } else {
               final dataUri =
@@ -138,11 +138,16 @@ class WebViewControllerX extends GetxController {
             action,
             requestId,
             'E_UNSUPPORTED',
-            'Unknown action: $action',
+            'webview_unknown_action'.trParams({'action': action}),
           );
       }
     } catch (_) {
-      await bridge.sendError('parse', null, 'E_PARSE', 'Invalid JSON from JS');
+      await bridge.sendError(
+        'parse',
+        null,
+        'E_PARSE',
+        'webview_invalid_json'.tr,
+      );
     }
   }
 
@@ -157,14 +162,14 @@ class WebViewControllerX extends GetxController {
 
     _batterySub?.cancel();
     _batterySub = battery.onBatteryStateChanged.listen((s) {
-      const msgs = {
-        BatteryState.charging: "Your device is charging",
-        BatteryState.discharging: "Your device is running on battery",
-        BatteryState.full: "Your battery is fully charged",
-        BatteryState.unknown: "Battery status is unknown",
+      final msgs = {
+        BatteryState.charging: 'webview_battery_charging'.tr,
+        BatteryState.discharging: 'webview_battery_discharging'.tr,
+        BatteryState.full: 'webview_battery_full'.tr,
+        BatteryState.unknown: 'webview_battery_unknown'.tr,
       };
       bridge.sendEvent('batteryState', {
-        'state': msgs[s] ?? "Battery status is unknown",
+        'state': msgs[s] ?? 'webview_battery_unknown'.tr,
       });
     });
 
@@ -173,16 +178,18 @@ class WebViewControllerX extends GetxController {
       final status = results.isNotEmpty
           ? results.first
           : ConnectivityResult.none;
-      const msgs = {
-        ConnectivityResult.wifi: "Connected via Wi-Fi",
-        ConnectivityResult.mobile: "Connected via mobile data",
-        ConnectivityResult.ethernet: "Connected via Ethernet",
-        ConnectivityResult.bluetooth: "Connected via Bluetooth",
-        ConnectivityResult.vpn: "Connected via VPN",
-        ConnectivityResult.other: "Connected (other network)",
-        ConnectivityResult.none: "No internet connection",
+      final msgs = {
+        ConnectivityResult.wifi: 'webview_connected_wifi'.tr,
+        ConnectivityResult.mobile: 'webview_connected_mobile'.tr,
+        ConnectivityResult.ethernet: 'webview_connected_ethernet'.tr,
+        ConnectivityResult.bluetooth: 'webview_connected_bluetooth'.tr,
+        ConnectivityResult.vpn: 'webview_connected_vpn'.tr,
+        ConnectivityResult.other: 'webview_connected_other'.tr,
+        ConnectivityResult.none: 'webview_no_internet'.tr,
       };
-      bridge.sendEvent('connectivity', {'status': msgs[status] ?? "Unknown"});
+      bridge.sendEvent('connectivity', {
+        'status': msgs[status] ?? 'webview_unknown'.tr,
+      });
     });
   }
 

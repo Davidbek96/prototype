@@ -18,6 +18,7 @@ The original project brief and technical spec were used to extract requirements 
 ## 📂 Project layout (key files)
 ```
 lib/
+ ├── translations/           # English  and Korean translations
  ├── bindings/               # GetX dependency bindings (chat_binding.dart)
  ├── controllers/            # GetX controllers (chat_controller, settings_controller, webview_controller)
  ├── domain/                 # Streaming/chat domain logic (chat_stream_manager, transient_message_service)
