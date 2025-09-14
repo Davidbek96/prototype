@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import 'bridge/webview_controller.dart';
+import 'bridge/bridge_controller.dart';
 
 class WebViewPage extends StatelessWidget {
   const WebViewPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(WebViewControllerX());
+    final controller = Get.put(WebviewBridgeCtrl());
 
     return Scaffold(
       body: Stack(

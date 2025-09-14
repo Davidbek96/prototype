@@ -11,7 +11,7 @@ import 'services/tts_service.dart';
 import '../../shared/services/permission_service.dart';
 import '../../shared/services/connectivity_service.dart';
 import 'models/gemini_manager.dart';
-import 'services/chat_stream_manager.dart';
+import 'domain/chat_stream_manager.dart';
 import 'services/transient_message_service.dart';
 import '../settings/settings_controller.dart';
 

@@ -7,11 +7,11 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:vibration/vibration.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import 'webview_bridge.dart';
+import 'messages_model.dart';
 
-class WebViewControllerX extends GetxController {
+class WebviewBridgeCtrl extends GetxController {
   late final WebViewController webViewController;
-  late final WebViewBridge bridge;
+  late final BridgeMessages bridge;
 
   final battery = Battery();
   StreamSubscription<BatteryState>? _batterySub;
@@ -46,7 +46,7 @@ class WebViewControllerX extends GetxController {
       )
       ..loadFlutterAsset('assets/demo/index.html');
 
-    bridge = WebViewBridge(webViewController);
+    bridge = BridgeMessages(webViewController);
   }
 
   Future<void> _injectOnMessageFallback() async {
@@ -81,7 +81,7 @@ class WebViewControllerX extends GetxController {
           await bridge.sendResponse(
             action,
             requestId,
-            await WebViewBridge.getDeviceInfo(),
+            await BridgeMessages.getDeviceInfo(),
           );
           break;
 

@@ -1,129 +1,161 @@
-# Webview & Chatbot Prototype
-A production-oriented Flutter prototype: a **WebView ↔ Native Hook** demo + **AI voice chatbot** (Gemini/OpenAI compatible), built with **GetX** and modular architecture. The README incorporates the project's design brief and core requirements (WebView hooks, streaming LLM responses, STT/TTS flow, permissions, and error handling).
-
-> **Important:** The chatbot requires a valid **Gemini API Key** registered in the app (Settings → API Key) to function.
+# 🌐 Webview & Chatbot Prototype  
+_WebView ↔ 네이티브 통신과 Gemini 기반 AI 음성 챗봇을 결합한 Flutter 프로토타입_
 
 ---
 
-## 🚩 Summary / What this project is
-This repository is a prototype that demonstrates:
-- Native ↔ WebView bi-directional communication (JS ↔ Native hooks).
-- Real-time voice-driven AI chat: STT (partial transcription) → streaming LLM (partial-token rendering) → TTS (per-bubble playback), with seamless, cancellable streams.
-- App-level features: settings (API key, voice/lang), connectivity handling, WebView bridge, and demo assets (local HTML in assets).
+## 📖 도움말 & 문서 (Korean)
 
-The original project brief and technical spec were used to extract requirements and main features. fileciteturn0file0
+**Webview & Chatbot Prototype**에 오신 것을 환영합니다!  
+이 문서는 주요 기능, 시작 방법, 문제 해결 및 기술 사양을 안내합니다.
 
 ---
 
-## 📂 Project layout (key files)
-```
-lib/
- ├── translations/           # English  and Korean translations
- ├── bindings/               # GetX dependency bindings (chat_binding.dart)
- ├── controllers/            # GetX controllers (chat_controller, settings_controller, webview_controller)
- ├── domain/                 # Streaming/chat domain logic (chat_stream_manager, transient_message_service)
- ├── models/                 # Chat + Gemini/OpenAI models (chat_model.dart, gemini_chat_model.dart)
- ├── pages/                  # Screens (chat_page, help_docs_page, home_page, settings_page, webview_page)
- ├── services/               # Connectivity, Gemini manager, permissions, STT/TTS services
- ├── utils/                  # Utilities (webview_bridge)
- ├── widgets/                # Reusable widgets (chat UI, settings cards)
- └── main.dart               # App entry point
-assets/
- └── demo/index.html         # Demo web page loaded into WebView
-```
+### ✨ 주요 기능
+- 🤖 **Gemini AI 챗봇** – 실시간 스트리밍 대화
+- 🎙 **음성 입력 (STT)** – 마이크 버튼을 길게 눌러 말하기
+- 🔊 **TTS (텍스트 읽기)** – 챗봇 응답을 음성으로 출력
+- 🌐 **WebView ↔ Native Hook** – 양방향 메시지 교환 (JS ↔ Native)
+- ⚙️ **설정 페이지** – API 키, 언어, 음성 옵션 관리
+- 📖 **도움말 & 문서 페이지** – 사용자 가이드 내장
 
 ---
 
-## ✨ Main features (added from spec)
-
-### 1) WebView ↔ Native Hook (JS ↔ Native)
-- Supports bidirectional JSON messaging: `window.JOI.postMessage(json)` (JS → Native) and `window.JOI.onMessage(json)` (Native → JS).  
-- Message schema (request / response / event / error) is enforced and the web demo times out requests after 10 seconds if no response.  
-- Example native actions exposed: `vibrate`, `getDeviceInfo`, `pickImage`, `copyToClipboard`, custom actions.  
-- Native can push events (battery/network ticks, timers) to the WebView for real-time UI updates.
-
-### 2) Streaming AI Chat (STT → LLM stream → TTS)
-- **STT**: Hold-to-talk mic (partial transcription events are shown live). Uses on-device speech APIs (Android/iOS) to provide partial transcripts.
-- **LLM streaming**: Abstract `ChatModel` interface allows swapping backends (OpenAI, Gemini, or a mock). Streams tokens as `ChatChunk` and supports mid-stream cancellation and retry. The UI renders tokens incrementally (typewriter-style).
-- **TTS**: Per-bubble playback; option to auto-play when model response finishes; supports replay of any bubble's TTS output.
-- Robust UX for cancel/stop/retry during streaming and speech playback.
-
-### 3) Reliability & Timeouts
-- LLM response timeout and token gap handling: if no response within configured limits, keep-alive or retry logic triggers (spec suggests 20s response wait, 5s token gap threshold).
-- WebView requests time out after 10s (E_TIMEOUT) and return structured errors to JS side.
-
-### 4) Permissions & Error Handling
-- Microphone permissions are requested at runtime; clear user messages are shown for:
-  - Microphone permission denied or missing STT engine.
-  - Network errors or no connectivity.
-  - Missing/invalid API key (direct user to Settings).
-- Apps must include platform permission keys: `RECORD_AUDIO` (Android), `NSMicrophoneUsageDescription` / `NSSpeechRecognitionUsageDescription` (iOS).
-
-### 5) Adapter & Architecture
-- `ChatModel` adapter pattern to decouple UI from LLM provider: any model implementing a `streamReply(...) -> Stream<ChatChunk>` can be used. This enables swapping Gemini/OpenAI without changing UI logic.
-- Separation of concerns: controllers (GetX) for state, services for external APIs, domain layer for streaming/chat logic.
+### 🚀 시작하기 & API 키
+1. **처음 설치 시** 앱은 `.env` 파일의 기본 API 키를 불러옵니다.  
+2. API 키는 언제든 **설정 → API 키**에서 교체/삭제할 수 있습니다.  
+   - 삭제 시 새 키를 저장하기 전까지 챗봇은 작동하지 않습니다.  
+3. 유효한 키 저장 후 **채팅 페이지**에서 대화를 시작하세요.  
+4. 🎤 마이크 버튼을 **길게 누른 상태로 말하기**  
+5. **설정**에서 자동 TTS를 켜면 응답이 자동으로 읽어집니다.
 
 ---
 
-## 📥 Setup & Run
-
-1. Clone repository
-```bash
-git clone https://github.com/your-username/flutter-gemini-chatbot.git
-cd flutter-gemini-chatbot
-```
-
-2. Install dependencies
-```bash
-flutter pub get
-```
-
-3. Register Gemini API Key (required)
-- Recommended: Open the app → **Settings → API Key** and paste your Gemini API key.  
-- **Do not** hardcode keys for production. For quick testing you may temporarily place it in `lib/models/gemini_chat_model.dart` (search for `apiKey`).
-
-4. Run
-```bash
-flutter run
-```
+### 🐛 문제 해결
+- **유효하지 않은 API 키** → 설정에서 키 확인  
+- **챗봇 응답 없음** → 네트워크 연결 확인  
+- **음성 입력 안 됨** → 기기 마이크 권한 확인  
+- **TTS 작동 안 함** → 기기에 TTS 엔진 설치 여부 확인  
 
 ---
 
-## 🧪 Testing & Demo flows
-- WebView demo: open the WebView screen and interact with the demo page; trigger native actions (vibrate, clipboard, pick image) to see JS↔Native messaging.
-- Voice chat demo: open Chat screen, press-and-hold mic to speak (partial STT will appear), release to send to model. Model tokens should stream into the chat bubble and optionally play via TTS after finishing.
-- Settings: configure language, voice, API key, and toggle auto-play TTS.
+### ℹ️ 기술 스택
+- **GetX** → 상태 관리  
+- **GetStorage** → 로컬 저장소  
+- **Dotenv** → 환경 변수  
+- **Gemini API** → AI 챗봇  
+- **speech_to_text** → 음성 입력  
+- **flutter_tts** → 음성 출력  
+- **connectivity_plus** → 네트워크 모니터링  
+- **permission_handler** → 권한 관리  
 
 ---
 
-## ⚙️ Config & Environment
-- Provide `.env.example` for any environment variables (API endpoints, keys). If using platform-specific keys/certificates, document them in the repo.
-- Ensure app has following platform permissions configured:
-  - Android: `android.permission.RECORD_AUDIO`
-  - iOS: `NSMicrophoneUsageDescription`, `NSSpeechRecognitionUsageDescription`
+### 📂 프로젝트 구조
+lib
+└── features
+  │  ├── chat
+  │  │ ├── domain
+  │  │ │ └── chat_stream_manager.dart
+  │  │ ├── models
+  │  │ │ ├── chat_model.dart
+  │  │ │ ├── gemini_adapter.dart
+  │  │ │ └── gemini_manager.dart
+  │  │ ├── services
+  │  │ │ ├── stt_service.dart
+  │  │ │ ├── transient_message_service.dart
+  │  │ │ └── tts_service.dart
+  │  │ ├── widgets
+  │  │ │ ├── action_card.dart
+  │  │ │ ├── chat_bubble.dart
+  │  │ │ ├── input_area.dart
+  │  │ │ ├── mic_pulse_btn.dart
+  │  │ │ └── show_list_empty.dart
+  │  │ ├── chat_binding.dart
+  │  │ ├── chat_controller.dart
+  │  │ └── chat_page.dart
+  │  │
+  │  ├── help_docs
+  │  │ └── help_docs_page.dart
+  │  │
+  │  ├── home
+  │  │ └── home_page.dart
+  │  │
+  │  ├── settings
+  │  │ ├── widgets
+  │  │ │ ├── api_key_card.dart
+  │  │ │ ├── danger_utilities_card.dart
+  │  │ │ ├── voice_language_card.dart
+  │  │ │ └── settings_controller.dart
+  │  │ └── settings_page.dart
+  │  │
+  │  └── webview
+  │   └── bridge
+  │    └── webview_page.dart
+  │ 
+  ├─ shared
+  │  ├── services
+  │  └── translations
+  ├─ app.dart
+  └─ main.dart
+
+### 🙏 마무리
+**Webview & Chatbot Prototype**을 사용해 주셔서 감사합니다.  
+여러분의 피드백과 제안은 앱의 발전에 큰 도움이 됩니다! 🚀
 
 ---
 
-## 🛠 Troubleshooting
-- If streaming stalls: check network + API key validity. Restart chat stream or press retry.  
-- If STT doesn't start: confirm microphone permission and presence of an STT engine. On Android test with Google Speech services.  
-- Reset local storage: open Settings → Danger utilities → Reset (or programmatically `GetStorage().erase()`).
-- If WebView messages time out, inspect the demo HTML (`assets/demo/index.html`) to see requestIds and payloads.
+---
+
+## 📘 Help & Documentation (English)
+
+Welcome to **Webview & Chatbot Prototype**!  
+This document explains the main features, setup, troubleshooting, and technical specifications.
 
 ---
 
-## 🤝 Contributing
-Contributions welcome — issues, PRs, and feedback. Suggested improvements:
-- Add unit/integration tests for stream manager and WebView bridge.  
-- Add PDF/export of conversation history.  
-- Add remote settings / feature flags for LLM backend selection.
+### ✨ Main Features
+- 🤖 **Gemini AI Chatbot** – Real-time streaming responses
+- 🎙 **Voice Input (STT)** – Hold mic button to speak
+- 🔊 **TTS (Text-to-Speech)** – Chatbot reads responses aloud
+- 🌐 **WebView ↔ Native Hook** – Bidirectional JSON messaging
+- ⚙️ **Settings Page** – Manage API key, language, and voice options
+- 📖 **Help & Docs Page** – In-app guide
 
 ---
 
-## 📜 License
-MIT License — see `LICENSE`
+### 🚀 Getting Started & API Key
+1. On first install, the app loads an API key from `.env`.  
+2. API key can be updated anytime in **Settings → API Key**.  
+   - If deleted, chatbot won’t function until a new key is saved.  
+3. Save a valid key, then return to **Chat Page** to start a conversation.  
+4. 🎤 Press and **hold mic button to speak**.  
+5. Enable auto-TTS in **Settings** to hear responses automatically.  
 
 ---
+
+### 🐛 Troubleshooting
+- **Invalid API Key** → Check key in settings  
+- **No chatbot response** → Verify network connection  
+- **Voice input not working** → Enable microphone permissions  
+- **TTS not working** → Ensure device has a TTS engine installed  
+
+---
+
+### ℹ️ Tech Stack
+- **GetX** → State management  
+- **GetStorage** → Local storage  
+- **Dotenv** → Environment variables  
+- **Gemini API** → AI chatbot  
+- **speech_to_text** → Voice input  
+- **flutter_tts** → Voice output  
+- **connectivity_plus** → Network monitoring  
+- **permission_handler** → Permissions  
+
+---
+
+### 🙏 Closing
+Thank you for using **Webview & Chatbot Prototype**!  
+Your feedback and suggestions are highly valuable for future improvements. 🚀
 
 ## 👤 Contact
 DovudjonUsmonov@gmail.com

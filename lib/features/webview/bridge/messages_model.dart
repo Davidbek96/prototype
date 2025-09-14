@@ -3,9 +3,9 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 /// Helper functions for JOI WebView bridge
-class WebViewBridge {
+class BridgeMessages {
   final WebViewController controller;
-  WebViewBridge(this.controller);
+  BridgeMessages(this.controller);
 
   Future<void> sendResponse(
     String action,
