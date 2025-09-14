@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:testapp/translations.dart';
+import 'package:testapp/bindings/translations/translations.dart';
 import 'controllers/settings_controller.dart';
 import 'pages/home_page.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
