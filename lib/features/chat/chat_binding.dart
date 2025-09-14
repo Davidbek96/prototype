@@ -1,5 +1,6 @@
 // lib/bindings/chat_binding.dart
 import 'package:get/get.dart';
+import 'package:testapp/features/chat/domain/chat_stream_manager.dart';
 
 import 'chat_controller.dart';
 import 'services/stt_service.dart';
@@ -7,7 +8,6 @@ import 'services/tts_service.dart';
 import '../../shared/services/permission_service.dart';
 import '../../shared/services/connectivity_service.dart';
 import 'models/gemini_manager.dart';
-import 'services/chat_stream_manager.dart';
 import 'services/transient_message_service.dart';
 
 /// Bindings to register chat-related dependencies for GetX.
