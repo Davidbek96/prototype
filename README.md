@@ -54,58 +54,57 @@ _WebView ↔ 네이티브 통신과 Gemini 기반 AI 음성 챗봇을 결합한 
 <details>
 <summary>lib/</summary>
 
-lib
-├── features # 🌟 Feature-based modular architecture
-│ ├── chat # 💬 Chat module (AI chatbot core)
-│ │ ├── domain # 📚 Business logic layer
-│ │ │ └── chat_stream_manager.dart # Manages streaming chat responses
-│ │ ├── models # 🗂 Data models & adapters
-│ │ │ ├── chat_model.dart # Base chat model interface
-│ │ │ ├── gemini_adapter.dart # Adapter for Gemini API
-│ │ │ └── gemini_manager.dart # Session manager for Gemini
-│ │ ├── services # 🔌 External services & integrations
-│ │ │ ├── stt_service.dart # Speech-to-Text (voice input)
-│ │ │ ├── transient_message_service.dart # Handles temporary messages
-│ │ │ └── tts_service.dart # Text-to-Speech (voice output)
-│ │ ├── widgets # 🎨 Chat UI components
-│ │ │ ├── action_card.dart # Card with quick actions
-│ │ │ ├── chat_bubble.dart # UI for chat messages
-│ │ │ ├── input_area.dart # Chat input field (text + mic)
-│ │ │ ├── mic_pulse_btn.dart # Animated mic button
-│ │ │ └── show_list_empty.dart # Empty state widget
-│ │ ├── chat_binding.dart # GetX binding (dependency injection)
-│ │ ├── chat_controller.dart # GetX controller (state management)
-│ │ └── chat_page.dart # Chat screen UI
-│ │
-│ ├── help_docs # 📖 Help & documentation
-│ │ └── help_docs_page.dart # In-app help/docs screen
-│ │
-│ ├── home # 🏠 Home module
-│ │ └── home_page.dart # Home screen
-│ │
-│ ├── settings # ⚙️ Settings module
-│ │ ├── widgets # UI widgets for settings
-│ │ │ ├── api_key_card.dart # API key input
-│ │ │ ├── danger_utilities_card.dart # Reset / clear storage
-│ │ │ ├── voice_language_card.dart # Language & voice settings
-│ │ │ └── settings_controller.dart # GetX controller for settings
-│ │ └── settings_page.dart # Settings screen
-│ │
-│ └── webview # 🌐 WebView integration
-│ ├── bridge # Web ↔ Native bridge
-│ │ ├── bridge_controller.dart # Handles JS <-> Native messages
-│ │ └── messages_model.dart # Data model for bridge messages
-│ └── webview_page.dart # WebView screen UI
+<!-- Commented, readable version (good for README explanations) -->
+```text
+lib/
+├── features/                         # Feature-based modular architecture
+│   ├── chat/                         # 💬 Chat feature (AI + UI)
+│   │   ├── domain/                   # Business logic / use-cases
+│   │   │   └── chat_stream_manager.dart   # Manages streaming chat responses
+│   │   ├── models/                   # Data models & adapters
+│   │   │   ├── chat_model.dart
+│   │   │   ├── gemini_adapter.dart
+│   │   │   └── gemini_manager.dart
+│   │   ├── services/                 # External services (STT, TTS, etc.)
+│   │   │   ├── stt_service.dart
+│   │   │   ├── transient_message_service.dart
+│   │   │   └── tts_service.dart
+│   │   ├── widgets/                  # Presentational widgets & components
+│   │   │   ├── action_card.dart
+│   │   │   ├── chat_bubble.dart
+│   │   │   ├── input_area.dart
+│   │   │   ├── mic_pulse_btn.dart
+│   │   │   └── show_list_empty.dart
+│   │   ├── chat_binding.dart         # GetX binding (dependency injection)
+│   │   ├── chat_controller.dart      # GetX controller (state management)
+│   │   └── chat_page.dart            # Chat screen (UI)
+│   │
+│   ├── help_docs/                    # 📖 Help & documentation screens
+│   │   └── help_docs_page.dart
+│   │
+│   ├── home/                         # 🏠 Home screen & related UI
+│   │   └── home_page.dart
+│   │
+│   ├── settings/                     # ⚙️ Settings & preferences
+│   │   ├── widgets/                  # Small widgets used in settings
+│   │   │   ├── api_key_card.dart     # API key entry / display
+│   │   │   ├── danger_utilities_card.dart # Reset / erase storage utilities
+│   │   │   ├── voice_language_card.dart  # Language & voice selection
+│   │   │   └── settings_controller.dart # Settings controller (GetX)
+│   │   └── settings_page.dart        # Settings screen (UI)
+│   │
+│   └── webview/                      # 🌐 WebView integration
+│       ├── bridge/                   # Bridge layer: JS ↔ Native
+│       │   ├── bridge_controller.dart    # WebView <-> Native message handler
+│       │   └── messages_model.dart       # Message schemas/models for bridge
+│       └── webview_page.dart             # WebView screen (UI)
 │
-├── shared # 🔄 Shared resources
-│ ├── services # Common/global services
-│ └── translations # i18n translations
+├── shared/                           # 🔁 Shared resources across features
+│   ├── services/                     # Global/shared services (e.g., analytics)
+│   └── translations/                 # i18n / localization files
 │
-├── app.dart # 🛠 Root app configuration (routes, theme)
-└── main.dart # 🚀 App entry point
-
-bash
-Copy code
+├── app.dart                          # 🛠 App config: routes, theme, bindings
+└── main.dart                         # 🚀 App entry point
 
 </details>
 
