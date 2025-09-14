@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../controllers/settings_controller.dart';
+import '../settings_controller.dart';
 
 class VoiceLanguageCard extends StatelessWidget {
   const VoiceLanguageCard({super.key});

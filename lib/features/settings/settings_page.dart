@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../widgets/settings/api_key_card.dart';
-import '../widgets/settings/voice_language_card.dart';
-import '../widgets/settings/danger_utilities_card.dart';
+import 'widgets/api_key_card.dart';
+import 'widgets/voice_language_card.dart';
+import 'widgets/danger_utilities_card.dart';
 import 'package:get/get.dart';
 
 class SettingsPage extends StatelessWidget {

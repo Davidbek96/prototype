@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import '../controllers/webview_controller.dart';
+import 'bridge/webview_controller.dart';
 
 class WebViewPage extends StatelessWidget {
   const WebViewPage({super.key});

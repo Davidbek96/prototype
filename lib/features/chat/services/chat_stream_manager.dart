@@ -1,5 +1,5 @@
 import 'dart:async';
-import '../models/gemini_chat_model.dart';
+import '../models/gemini_adapter.dart';
 import '../models/chat_model.dart';
 
 typedef ChunkCallback = void Function(ChatChunk chunk);
@@ -15,7 +15,7 @@ class ChatStreamManager {
 
   /// Start a new streaming session from the provided Gemini model.
   /// Cancels any previous stream before starting.
-  void startStream(GeminiChatModel gemini, List<ChatMessage> history) {
+  void startStream(GeminiAdapter gemini, List<ChatMessage> history) {
     stop();
     _sub = gemini
         .streamReply(messages: history)

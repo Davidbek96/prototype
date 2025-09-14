@@ -1,16 +1,16 @@
 import 'package:get/get.dart';
-import '../models/gemini_chat_model.dart';
-import '../pages/settings_page.dart';
-import '../controllers/settings_controller.dart';
+import 'gemini_adapter.dart';
+import '../../settings/settings_page.dart';
+import '../../settings/settings_controller.dart';
 
 class GeminiManager {
-  GeminiChatModel? _cached;
+  GeminiAdapter? _cached;
 
-  GeminiChatModel? get current => _cached;
+  GeminiAdapter? get current => _cached;
 
   /// Returns cached model or creates one from SettingsController's stored API key.
   /// If API key is missing, prompts user to open settings and returns null.
-  GeminiChatModel? currentOrPromptSettings() {
+  GeminiAdapter? currentOrPromptSettings() {
     final settings = Get.find<SettingsController>();
 
     // ONLY check the stored key (do not rely on the TextEditingController)
@@ -29,7 +29,7 @@ class GeminiManager {
     }
 
     if (_cached == null || _cached!.apiKey != stored) {
-      _cached = GeminiChatModel(apiKey: stored);
+      _cached = GeminiAdapter(apiKey: stored);
     }
     return _cached;
   }

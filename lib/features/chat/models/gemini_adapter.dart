@@ -4,11 +4,11 @@ import 'package:http/http.dart' as http;
 import 'chat_model.dart';
 
 /// stream controller is closed and cleans up timers/subscriptions on cancel.
-class GeminiChatModel implements ChatModel {
+class GeminiAdapter implements ChatModel {
   final String apiKey;
   final String model;
 
-  GeminiChatModel({required this.apiKey, this.model = "gemini-2.0-flash"});
+  GeminiAdapter({required this.apiKey, this.model = "gemini-2.0-flash"});
 
   @override
   Stream<ChatChunk> streamReply({

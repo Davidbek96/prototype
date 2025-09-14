@@ -7,7 +7,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:vibration/vibration.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import '../utils/webview_bridge.dart';
+import 'webview_bridge.dart';
 
 class WebViewControllerX extends GetxController {
   late final WebViewController webViewController;

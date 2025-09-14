@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:testapp/bindings/translations/translations.dart';
-import 'package:testapp/controllers/settings_controller.dart';
-import 'package:testapp/pages/home_page.dart';
+import 'package:testapp/shared/translations/translations.dart';
+import 'package:testapp/features/settings/settings_controller.dart';
+import 'package:testapp/features/home/home_page.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

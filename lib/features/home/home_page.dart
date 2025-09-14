@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:testapp/bindings/chat_binding.dart';
-import 'package:testapp/pages/help_docs_page.dart';
-import 'package:testapp/widgets/chat/action_card.dart';
+import 'package:testapp/features/chat/chat_binding.dart';
+import 'package:testapp/features/help_docs/help_docs_page.dart';
+import 'package:testapp/features/chat/widgets/action_card.dart';
 
-import 'chat_page.dart';
-import 'webview_page.dart';
+import '../chat/chat_page.dart';
+import '../webview/webview_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});

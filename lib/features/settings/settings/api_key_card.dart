@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import '../../controllers/settings_controller.dart';
+import '../settings_controller.dart';
 
 class ApiKeyCard extends StatelessWidget {
   const ApiKeyCard({super.key});
