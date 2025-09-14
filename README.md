@@ -51,11 +51,10 @@ _WebView ↔ 네이티브 통신과 Gemini 기반 AI 음성 챗봇을 결합한 
 ---
 
 ### 📂 프로젝트 구조
-<details>
-<summary>lib/</summary>
+
 
 <!-- Commented, readable version (good for README explanations) -->
-```text
+```
 lib
 ├── features                        // Feature-based modular architecture
 │   ├── chat                        // 💬 Chat module (AI chatbot core)
@@ -106,7 +105,7 @@ lib
 ├── app.dart                         // Root app configuration (routes, themes)
 └── main.dart                        // App entry point (main function)
 
-```text
+```
 
 ### 🙏 마무리
 **Webview & Chatbot Prototype**을 사용해 주셔서 감사합니다.  
