@@ -140,8 +140,8 @@ class DangerUtilitiesCard extends StatelessWidget {
 
     if (confirmed == true) {
       settings.toggleAutoPlayTts(false);
-      settings.setTtsLanguage('en-US');
-      settings.setSttLanguage('en-US');
+      settings.setTtsLanguage('ko-KR');
+      settings.setSttLanguage('ko-KR');
       Get.closeAllSnackbars();
       Get.snackbar('settings'.tr, 'preferences_cleared'.tr);
     }

@@ -30,6 +30,7 @@ class _MicOnButtonState extends State<MicOnButton>
   double _smoothedLevel = 0.0;
 
   bool _hasMicPermission = false;
+  bool _isRequestingPermission = false;
 
   @override
   void initState() {
@@ -51,17 +52,32 @@ class _MicOnButtonState extends State<MicOnButton>
   }
 
   Future<bool> _requestPermissionIfNeeded() async {
-    if (_hasMicPermission) return true;
+    if (_hasMicPermission) return true; // already granted
+
+    if (_isRequestingPermission) return false; // another request in progress
+
+    _isRequestingPermission = true;
+    final prevGranted = _hasMicPermission;
 
     final status = await Permission.microphone.request();
     final granted = status.isGranted;
+
     if (mounted) {
       setState(() => _hasMicPermission = granted);
     }
 
+    _isRequestingPermission = false;
+
     if (!granted) {
+      // still denied -> explain / open settings
       _showPermissionDialog();
+      return false;
     }
+
+    // If permission was just granted right now, return false so the user must press again
+    // to actually start listening / show overlay. This avoids unexpected actions immediately
+    // after the OS permission dialog.
+    if (!prevGranted && granted) return false;
 
     return granted;
   }

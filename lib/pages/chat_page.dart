@@ -56,6 +56,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     final ChatController ctrl = Get.find<ChatController>();
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: Text("gemini_chatbot".tr),
         actions: [
@@ -110,10 +111,6 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
               return ListView.builder(
                 controller: _scrollController,
                 reverse: true,
-                padding: EdgeInsets.only(
-                  top: 12,
-                  bottom: MediaQuery.of(context).viewInsets.bottom + 12,
-                ),
                 itemCount: msgs.length,
                 itemBuilder: (context, reverseIndex) {
                   // Map reversed index to normal chronological index:
